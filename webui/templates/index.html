@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cyanrip-webui</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Linux-first CD Ripping Control</p>
+        <h1>cyanrip-webui</h1>
+        <p class="subtitle">Graphische Steuerung fuer cyanrip, mit voller CLI-Abdeckung und Live-Logs.</p>
+      </div>
+      <div class="status-card">
+        <p>Status</p>
+        <strong id="status-state">idle</strong>
+        <span id="status-returncode">Exit: -</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2>Runtime</h2>
+        <label>Binary Path
+          <input id="binary-path" type="text" value="./bin/cyanrip" spellcheck="false" />
+        </label>
+        <label>Working Directory
+          <input id="working-directory" type="text" value="." spellcheck="false" />
+        </label>
+
+        <div class="actions">
+          <button id="probe-binary" type="button">Binary pruefen</button>
+          <button id="refresh-preview" type="button">Command preview</button>
+          <button id="start-job" type="button" class="accent">Start</button>
+          <button id="stop-job" type="button" class="danger">Stop</button>
+        </div>
+
+        <div id="probe-result" class="message"></div>
+        <pre id="command-preview" class="terminal"></pre>
+        <div id="error-box" class="error"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Ripping</h2>
+        <div class="grid-2">
+          <label>Offset (-s)
+            <input id="offset" type="number" />
+          </label>
+          <label>Device Path (-d)
+            <input id="device-path" type="text" spellcheck="false" />
+          </label>
+          <label>Max retries (-r)
+            <input id="max-retries" type="number" min="0" />
+          </label>
+          <label>Checksum retries (-Z)
+            <input id="ripping-retries" type="number" min="0" />
+          </label>
+          <label>Speed (-S)
+            <input id="speed" type="number" min="0" />
+          </label>
+          <label>Paranoia (-P)
+            <input id="paranoia-level" type="text" placeholder="max | none | 0..n" />
+          </label>
+        </div>
+
+        <label>Pregap Rules (-p), eine Regel pro Zeile: <code>track=action</code>
+          <textarea id="pregap-rules" rows="4" placeholder="2=merge&#10;7=track"></textarea>
+        </label>
+
+        <div class="check-grid">
+          <label><input id="overread-leadinout" type="checkbox" /> Overread (-O)</label>
+          <label><input id="decode-hdcd" type="checkbox" /> HDCD Decode (-H)</label>
+          <label><input id="force-deemphasis" type="checkbox" /> Force Deemphasis (-E)</label>
+          <label><input id="disable-deemphasis" type="checkbox" /> Disable Deemphasis (-W)</label>
+          <label><input id="disable-replaygain" type="checkbox" /> Disable ReplayGain (-K)</label>
+          <label><input id="find-drive-offset" type="checkbox" /> Find Drive Offset (-f)</label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Output</h2>
+        <div class="outputs" id="outputs-container"></div>
+
+        <div class="grid-2">
+          <label>Bitrate kbps (-b)
+            <input id="bitrate" type="number" min="1" />
+          </label>
+          <label>Sanitation (-T)
+            <select id="sanitation"></select>
+          </label>
+        </div>
+
+        <label>Directory Scheme (-D)
+          <input id="directory-scheme" type="text" spellcheck="false" />
+        </label>
+        <label>Track Scheme (-F)
+          <input id="track-scheme" type="text" spellcheck="false" />
+        </label>
+        <label>Log Scheme (-L)
+          <input id="log-scheme" type="text" spellcheck="false" />
+        </label>
+        <label>CUE Scheme (-M)
+          <input id="cue-scheme" type="text" spellcheck="false" />
+        </label>
+        <label>Track Selection (-l), CSV
+          <input id="track-selection" type="text" placeholder="1,2,3" spellcheck="false" />
+        </label>
+      </section>
+
+      <section class="panel">
+        <h2>Metadata & Misc</h2>
+
+        <div class="check-grid">
+          <label><input id="print-info-only" type="checkbox" /> Info only (-I)</label>
+          <label><input id="disable-mb" type="checkbox" /> Disable MusicBrainz (-N)</label>
+          <label><input id="disable-accurip" type="checkbox" /> Disable AccurateRip (-A)</label>
+          <label><input id="disable-coverart-db" type="checkbox" /> Disable CoverArt DB (-U)</label>
+          <label><input id="disable-coverart-embedding" type="checkbox" /> Disable embedding (-G)</label>
+          <label><input id="eject-on-success" type="checkbox" /> Eject after success (-Q)</label>
+          <label><input id="print-version" type="checkbox" /> Print version (-V)</label>
+          <label><input id="show-help" type="checkbox" /> Show help (-h)</label>
+        </div>
+
+        <label>Album Metadata (-a)
+          <textarea id="album-metadata" rows="3" placeholder="album=Name:album_artist=Artist:date=2026"></textarea>
+        </label>
+        <label>Track Metadata (-t), eine Zeile: <code>track=key=value:key=value</code>
+          <textarea id="track-metadata" rows="5" placeholder="1=title=Intro:artist=Band&#10;2=title=Main Song"></textarea>
+        </label>
+
+        <div class="grid-3">
+          <label>Release (-R)
+            <input id="release" type="text" spellcheck="false" />
+          </label>
+          <label>Disc (-c)
+            <input id="disc-number" type="number" min="1" />
+          </label>
+          <label>Total Discs (-c)
+            <input id="total-discs" type="number" min="1" />
+          </label>
+        </div>
+
+        <label>Cover Art (-C), eine Zeile: <code>destination=path_or_url</code> oder nur <code>path_or_url</code>
+          <textarea id="cover-arts" rows="4" placeholder="Front=/tmp/cover.jpg&#10;2=/tmp/track2.jpg"></textarea>
+        </label>
+
+        <label>Cover Art max size (-m)
+          <select id="coverart-lookup-size"></select>
+        </label>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Live Log</h2>
+        <pre id="job-log" class="terminal"></pre>
+      </section>
+    </main>
+
+    <script>
+      window.CYANRIP_DEFAULTS = {{ default_config | tojson }};
+      window.CYANRIP_OUTPUTS = {{ supported_outputs | tojson }};
+      window.CYANRIP_SANITATION = {{ sanitation_modes | tojson }};
+      window.CYANRIP_COVERART_SIZES = {{ coverart_lookup_sizes | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
