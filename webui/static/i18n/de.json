@@ -1,0 +1,168 @@
+{
+  "language": {
+    "name": {
+      "en": "Englisch",
+      "de": "Deutsch"
+    }
+  },
+  "hero": {
+    "eyebrow": "Linux-zentrierte CD-Ripping-Steuerung",
+    "subtitle": "Komfortable Steuerung fuer cyanrip mit gefuehrten Optionen und voller Experten-Transparenz."
+  },
+  "toolbar": {
+    "language": "Sprache",
+    "theme": {
+      "auto": "Theme: Auto ({resolved})",
+      "fixed": "Theme: {mode}",
+      "mode": {
+        "auto": "Auto",
+        "dark": "Dunkel",
+        "light": "Hell"
+      }
+    },
+    "animations": {
+      "on": "Animationen: An",
+      "off": "Animationen: Aus"
+    }
+  },
+  "status": {
+    "title": "Status",
+    "idle": "Bereit",
+    "scanning": "Scannen",
+    "scanned": "Gescannt",
+    "ripping": "Rippen",
+    "ripped": "Gerippt",
+    "failed": "Fehlgeschlagen",
+    "stopped": "Gestoppt",
+    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "eta": "ETA: {eta}",
+    "etaScanning": "Scannen"
+  },
+  "disc": {
+    "title": "Disc",
+    "empty": "Noch keine CD gescannt.",
+    "summary": {
+      "album": "Album",
+      "artist": "Artist",
+      "tracks": "Tracks",
+      "totalTime": "Gesamtzeit",
+      "accuraterip": "AccurateRip DB"
+    },
+    "unknownAlbum": "Unbekanntes Album",
+    "unknownArtist": "Unbekannter Artist"
+  },
+  "table": {
+    "track": "#",
+    "title": "Titel",
+    "artist": "Artist",
+    "duration": "Dauer",
+    "status": "Status",
+    "progress": "Fortschritt",
+    "accuraterip": "AccurateRip"
+  },
+  "runtime": {
+    "title": "Runtime",
+    "binaryPath": "Binary-Pfad",
+    "workingDirectory": "Arbeitsverzeichnis"
+  },
+  "button": {
+    "scan": "CD scannen",
+    "verifyBinary": "Binary pruefen",
+    "commandPreview": "Command-Preview",
+    "startRip": "Rip starten",
+    "stop": "Stop"
+  },
+  "ripping": {
+    "title": "Ripping",
+    "offset": "Offset (-s)",
+    "devicePath": "Geraetepfad (-d)",
+    "maxRetries": "Max retries (-r)",
+    "checksumRetries": "Checksum retries (-Z)",
+    "speed": "Speed (-S)",
+    "paranoia": "Paranoia (-P)",
+    "pregapRules": "Pregap-Regeln (-p)",
+    "overread": "Overread (-O)",
+    "hdcd": "HDCD decodieren (-H)",
+    "forceDeemphasis": "Deemphasis erzwingen (-E)",
+    "disableDeemphasis": "Deemphasis deaktivieren (-W)",
+    "disableReplayGain": "ReplayGain deaktivieren (-K)",
+    "findDriveOffset": "Drive-Offset suchen (-f)"
+  },
+  "output": {
+    "title": "Output",
+    "note": "Formate und Benennung waehlen. Das Default-Profil ist auf sichere FLAC-Rips ausgelegt.",
+    "bitrate": "Bitrate kbps (-b)",
+    "sanitation": "Sanitation (-T)",
+    "directoryScheme": "Directory-Schema (-D)",
+    "trackScheme": "Track-Schema (-F)",
+    "logScheme": "Log-Schema (-L)",
+    "cueScheme": "CUE-Schema (-M)",
+    "trackSelection": "Track-Auswahl (-l)"
+  },
+  "metadata": {
+    "title": "Metadaten und Sonstiges",
+    "infoOnly": "Nur Infos (-I)",
+    "disableMb": "MusicBrainz deaktivieren (-N)",
+    "disableAccurateRip": "AccurateRip deaktivieren (-A)",
+    "disableCoverArtDb": "Cover-Art-DB deaktivieren (-U)",
+    "disableEmbedding": "Embedding deaktivieren (-G)",
+    "eject": "Nach Erfolg auswerfen (-Q)",
+    "printVersion": "Version anzeigen (-V)",
+    "showHelp": "Hilfe anzeigen (-h)",
+    "albumMetadata": "Album-Metadaten (-a)",
+    "trackMetadata": "Track-Metadaten (-t)",
+    "release": "Release (-R)",
+    "disc": "Disc (-c)",
+    "totalDiscs": "Anzahl Discs (-c)",
+    "coverArt": "Cover-Art (-C)",
+    "coverArtSize": "Cover-Art Max-Groesse (-m)"
+  },
+  "log": {
+    "title": "Live-Log"
+  },
+  "trackStatus": {
+    "detected": "Erkannt",
+    "queued": "Wartend",
+    "running": "Rippen",
+    "done": "Fertig",
+    "error": "Fehler"
+  },
+  "hint": {
+    "binaryPath": "Pfad zur cyanrip-Binary. Expertennotiz: Das ist der Executable-Pfad, kein cyanrip-Flag.",
+    "workingDirectory": "Default ist ./output. Dort erstellt cyanrip seine Album-Ordner. Expertennotiz: Das ist das Prozess-CWD, kein cyanrip-Flag.",
+    "offset": "Drive-Offset in Samples. Fuer Einsteiger meist auf 0 lassen.",
+    "devicePath": "Optionaler Laufwerkspfad wie /dev/sr0.",
+    "maxRetries": "Frame-Retries bei Lesefehlern. Hoehere Werte helfen bei schwierigen CDs.",
+    "checksumRetries": "Wiederholt das Rippen, bis Checksummen so oft uebereinstimmen.",
+    "paranoia": "none, max oder eine Zahl. Fuer sichere Rips ist max meist sinnvoll.",
+    "pregapRules": "Eine Regel pro Zeile: track=default|drop|merge|track.",
+    "sanitation": "Dateinamensanitisierung. unicode ist guter Default; simple ersetzt kritische Zeichen mit _.",
+    "trackSelection": "CSV wie 1,2,5. Leer bedeutet: alle Tracks.",
+    "albumMetadata": "Album-Metadaten als key=value Paare, getrennt durch :",
+    "trackMetadata": "Eine Zeile pro Track: track=key=value:key=value.",
+    "coverArt": "Eine Zeile pro Eintrag: destination=path_or_url oder nur path_or_url."
+  },
+  "placeholder": {
+    "paranoia": "max | none | 0..n",
+    "pregapRules": "2=merge\n7=track",
+    "trackSelection": "1,2,3",
+    "albumMetadata": "album=Name:album_artist=Artist:date=2026",
+    "trackMetadata": "1=title=Intro:artist=Band\n2=title=Main Song",
+    "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg"
+  },
+  "message": {
+    "probingBinary": "Binary wird geprueft...",
+    "noOutput": "<keine Ausgabe>"
+  },
+  "error": {
+    "trackLabel": "Tracknummer",
+    "integer": "Ganzzahl",
+    "integerLabel": "{label} ist keine gueltige Ganzzahl.",
+    "float": "Ungueltiger numerischer Wert: {value}",
+    "pregapFormat": "Pregap-Regel in Zeile {line} muss track=action sein.",
+    "pregapActionMissing": "Pregap-Action fehlt in Zeile {line}.",
+    "trackMetadataFormat": "Track-Metadaten in Zeile {line} muessen track=metadata sein.",
+    "coverArtFormat": "Cover-Art-Zeile {line} muss destination=source sein.",
+    "coverArtIncomplete": "Cover-Art-Zeile {line} ist unvollstaendig."
+  }
+}

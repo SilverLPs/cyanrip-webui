@@ -56,6 +56,8 @@ class CyanripJobRunner:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     bufsize=1,
                     universal_newlines=True,
                     env=os.environ.copy(),
@@ -166,9 +168,17 @@ class CyanripJobRunner:
 
         try:
             assert proc.stdout is not None
-            for line in proc.stdout:
+            pending = ""
+            while True:
+                chunk = proc.stdout.read(256)
+                if chunk == "":
+                    break
+                pending += chunk
+                pending = self._flush_pending_lines(pending)
+
+            if pending:
                 with self._lock:
-                    self._append_log(line)
+                    self._append_log(pending)
         finally:
             returncode = proc.wait()
             with self._lock:
@@ -188,6 +198,22 @@ class CyanripJobRunner:
                     self._append_log(f"cyanrip mit Exit-Code {returncode} beendet.")
 
                 self._stop_requested = False
+
+    def _flush_pending_lines(self, pending: str) -> str:
+        start = 0
+        for idx, ch in enumerate(pending):
+            if ch not in ("\r", "\n"):
+                continue
+
+            if idx > start:
+                text = pending[start:idx]
+                with self._lock:
+                    self._append_log(text)
+            start = idx + 1
+
+        if start <= 0:
+            return pending
+        return pending[start:]
 
     @staticmethod
     def _resolve_workdir(working_directory: str | None) -> str:

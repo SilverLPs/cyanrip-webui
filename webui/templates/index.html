@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,32 +9,78 @@
   <body>
     <header class="hero">
       <div>
-        <p class="eyebrow">Linux-first CD Ripping Control</p>
+        <p class="eyebrow" data-i18n="hero.eyebrow">Linux-first CD ripping control</p>
         <h1>cyanrip-webui</h1>
-        <p class="subtitle">Graphische Steuerung fuer cyanrip, mit voller CLI-Abdeckung und Live-Logs.</p>
+        <p class="subtitle" data-i18n="hero.subtitle">Comfortable control for cyanrip with guided options and expert transparency.</p>
       </div>
-      <div class="status-card">
-        <p>Status</p>
-        <strong id="status-state">idle</strong>
-        <span id="status-returncode">Exit: -</span>
+      <div class="hero-side">
+        <div class="toolbar">
+          <label class="mini-control" for="language-select">
+            <span data-i18n="toolbar.language">Language</span>
+            <select id="language-select"></select>
+          </label>
+          <button id="theme-toggle" class="toolbar-button" type="button">Theme: Auto</button>
+          <button id="animation-toggle" class="toolbar-button" type="button">Animations: On</button>
+        </div>
+        <div class="status-card">
+          <p data-i18n="status.title">Status</p>
+          <strong id="status-state">
+            <span id="status-label">Idle</span>
+            <span id="status-indicator" class="status-indicator idle"></span>
+          </strong>
+          <span id="status-progress">Tracks: 0/0 (0.0%)</span>
+          <span id="status-eta">ETA: -</span>
+        </div>
       </div>
     </header>
 
     <main class="layout">
+      <section class="panel panel-wide">
+        <h2 data-i18n="disc.title">Disc</h2>
+        <div id="scan-summary" class="message"></div>
+
+        <div class="table-wrap">
+          <table class="tracks-table">
+            <thead>
+              <tr>
+                <th data-i18n="table.track">#</th>
+                <th data-i18n="table.title">Title</th>
+                <th data-i18n="table.artist">Artist</th>
+                <th data-i18n="table.duration">Duration</th>
+                <th data-i18n="table.status">Status</th>
+                <th data-i18n="table.progress">Progress</th>
+                <th data-i18n="table.accuraterip">AccurateRip</th>
+              </tr>
+            </thead>
+            <tbody id="tracks-body"></tbody>
+          </table>
+        </div>
+        <div id="tracks-empty" class="message" data-i18n="disc.empty">No disc scanned yet.</div>
+      </section>
+
       <section class="panel">
-        <h2>Runtime</h2>
-        <label>Binary Path
+        <h2 data-i18n="runtime.title">Runtime</h2>
+        <label>
+          <span class="label-head">
+            <span data-i18n="runtime.binaryPath">Binary path</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.binaryPath">i</span>
+          </span>
           <input id="binary-path" type="text" value="./bin/cyanrip" spellcheck="false" />
         </label>
-        <label>Working Directory
-          <input id="working-directory" type="text" value="." spellcheck="false" />
+        <label>
+          <span class="label-head">
+            <span data-i18n="runtime.workingDirectory">Working directory</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.workingDirectory">i</span>
+          </span>
+          <input id="working-directory" type="text" value="{{ default_working_directory }}" spellcheck="false" />
         </label>
 
-        <div class="actions">
-          <button id="probe-binary" type="button">Binary pruefen</button>
-          <button id="refresh-preview" type="button">Command preview</button>
-          <button id="start-job" type="button" class="accent">Start</button>
-          <button id="stop-job" type="button" class="danger">Stop</button>
+        <div class="actions actions-runtime">
+          <button id="scan-disc" type="button" data-i18n="button.scan">Scan disc</button>
+          <button id="probe-binary" type="button" data-i18n="button.verifyBinary">Verify binary</button>
+          <button id="refresh-preview" type="button" data-i18n="button.commandPreview">Command preview</button>
+          <button id="start-job" type="button" class="accent" data-i18n="button.startRip">Start rip</button>
+          <button id="stop-job" type="button" class="danger" data-i18n="button.stop">Stop</button>
         </div>
 
         <div id="probe-result" class="message"></div>
@@ -43,116 +89,171 @@
       </section>
 
       <section class="panel">
-        <h2>Ripping</h2>
+        <h2 data-i18n="ripping.title">Ripping</h2>
         <div class="grid-2">
-          <label>Offset (-s)
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.offset">Offset (-s)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.offset">i</span>
+            </span>
             <input id="offset" type="number" />
           </label>
-          <label>Device Path (-d)
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.devicePath">Device path (-d)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.devicePath">i</span>
+            </span>
             <input id="device-path" type="text" spellcheck="false" />
           </label>
-          <label>Max retries (-r)
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.maxRetries">Max retries (-r)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.maxRetries">i</span>
+            </span>
             <input id="max-retries" type="number" min="0" />
           </label>
-          <label>Checksum retries (-Z)
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.checksumRetries">Checksum retries (-Z)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.checksumRetries">i</span>
+            </span>
             <input id="ripping-retries" type="number" min="0" />
           </label>
-          <label>Speed (-S)
+          <label>
+            <span data-i18n="ripping.speed">Speed (-S)</span>
             <input id="speed" type="number" min="0" />
           </label>
-          <label>Paranoia (-P)
-            <input id="paranoia-level" type="text" placeholder="max | none | 0..n" />
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.paranoia">Paranoia (-P)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.paranoia">i</span>
+            </span>
+            <input id="paranoia-level" type="text" data-i18n-placeholder="placeholder.paranoia" placeholder="max | none | 0..n" />
           </label>
         </div>
 
-        <label>Pregap Rules (-p), eine Regel pro Zeile: <code>track=action</code>
-          <textarea id="pregap-rules" rows="4" placeholder="2=merge&#10;7=track"></textarea>
+        <label>
+          <span class="label-head">
+            <span data-i18n="ripping.pregapRules">Pregap rules (-p)</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.pregapRules">i</span>
+          </span>
+          <textarea id="pregap-rules" rows="4" data-i18n-placeholder="placeholder.pregapRules" placeholder="2=merge&#10;7=track"></textarea>
         </label>
 
         <div class="check-grid">
-          <label><input id="overread-leadinout" type="checkbox" /> Overread (-O)</label>
-          <label><input id="decode-hdcd" type="checkbox" /> HDCD Decode (-H)</label>
-          <label><input id="force-deemphasis" type="checkbox" /> Force Deemphasis (-E)</label>
-          <label><input id="disable-deemphasis" type="checkbox" /> Disable Deemphasis (-W)</label>
-          <label><input id="disable-replaygain" type="checkbox" /> Disable ReplayGain (-K)</label>
-          <label><input id="find-drive-offset" type="checkbox" /> Find Drive Offset (-f)</label>
+          <label><input id="overread-leadinout" type="checkbox" /> <span data-i18n="ripping.overread">Overread (-O)</span></label>
+          <label><input id="decode-hdcd" type="checkbox" /> <span data-i18n="ripping.hdcd">HDCD decode (-H)</span></label>
+          <label><input id="force-deemphasis" type="checkbox" /> <span data-i18n="ripping.forceDeemphasis">Force deemphasis (-E)</span></label>
+          <label><input id="disable-deemphasis" type="checkbox" /> <span data-i18n="ripping.disableDeemphasis">Disable deemphasis (-W)</span></label>
+          <label><input id="disable-replaygain" type="checkbox" /> <span data-i18n="ripping.disableReplayGain">Disable ReplayGain (-K)</span></label>
+          <label><input id="find-drive-offset" type="checkbox" /> <span data-i18n="ripping.findDriveOffset">Find drive offset (-f)</span></label>
         </div>
       </section>
 
       <section class="panel">
-        <h2>Output</h2>
+        <h2 data-i18n="output.title">Output</h2>
+        <p class="small-note" data-i18n="output.note">Select formats and naming. Default profile is tuned for safe FLAC rips.</p>
         <div class="outputs" id="outputs-container"></div>
 
         <div class="grid-2">
-          <label>Bitrate kbps (-b)
+          <label>
+            <span data-i18n="output.bitrate">Bitrate kbps (-b)</span>
             <input id="bitrate" type="number" min="1" />
           </label>
-          <label>Sanitation (-T)
+          <label>
+            <span class="label-head">
+              <span data-i18n="output.sanitation">Sanitation (-T)</span>
+              <span class="hint" tabindex="0" data-tip-key="hint.sanitation">i</span>
+            </span>
             <select id="sanitation"></select>
           </label>
         </div>
 
-        <label>Directory Scheme (-D)
+        <label>
+          <span data-i18n="output.directoryScheme">Directory scheme (-D)</span>
           <input id="directory-scheme" type="text" spellcheck="false" />
         </label>
-        <label>Track Scheme (-F)
+        <label>
+          <span data-i18n="output.trackScheme">Track scheme (-F)</span>
           <input id="track-scheme" type="text" spellcheck="false" />
         </label>
-        <label>Log Scheme (-L)
+        <label>
+          <span data-i18n="output.logScheme">Log scheme (-L)</span>
           <input id="log-scheme" type="text" spellcheck="false" />
         </label>
-        <label>CUE Scheme (-M)
+        <label>
+          <span data-i18n="output.cueScheme">CUE scheme (-M)</span>
           <input id="cue-scheme" type="text" spellcheck="false" />
         </label>
-        <label>Track Selection (-l), CSV
-          <input id="track-selection" type="text" placeholder="1,2,3" spellcheck="false" />
+        <label>
+          <span class="label-head">
+            <span data-i18n="output.trackSelection">Track selection (-l)</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.trackSelection">i</span>
+          </span>
+          <input id="track-selection" type="text" data-i18n-placeholder="placeholder.trackSelection" placeholder="1,2,3" spellcheck="false" />
         </label>
       </section>
 
       <section class="panel">
-        <h2>Metadata & Misc</h2>
+        <h2 data-i18n="metadata.title">Metadata and misc</h2>
 
         <div class="check-grid">
-          <label><input id="print-info-only" type="checkbox" /> Info only (-I)</label>
-          <label><input id="disable-mb" type="checkbox" /> Disable MusicBrainz (-N)</label>
-          <label><input id="disable-accurip" type="checkbox" /> Disable AccurateRip (-A)</label>
-          <label><input id="disable-coverart-db" type="checkbox" /> Disable CoverArt DB (-U)</label>
-          <label><input id="disable-coverart-embedding" type="checkbox" /> Disable embedding (-G)</label>
-          <label><input id="eject-on-success" type="checkbox" /> Eject after success (-Q)</label>
-          <label><input id="print-version" type="checkbox" /> Print version (-V)</label>
-          <label><input id="show-help" type="checkbox" /> Show help (-h)</label>
+          <label><input id="print-info-only" type="checkbox" /> <span data-i18n="metadata.infoOnly">Info only (-I)</span></label>
+          <label><input id="disable-mb" type="checkbox" /> <span data-i18n="metadata.disableMb">Disable MusicBrainz (-N)</span></label>
+          <label><input id="disable-accurip" type="checkbox" /> <span data-i18n="metadata.disableAccurateRip">Disable AccurateRip (-A)</span></label>
+          <label><input id="disable-coverart-db" type="checkbox" /> <span data-i18n="metadata.disableCoverArtDb">Disable Cover Art DB (-U)</span></label>
+          <label><input id="disable-coverart-embedding" type="checkbox" /> <span data-i18n="metadata.disableEmbedding">Disable embedding (-G)</span></label>
+          <label><input id="eject-on-success" type="checkbox" /> <span data-i18n="metadata.eject">Eject after success (-Q)</span></label>
+          <label><input id="print-version" type="checkbox" /> <span data-i18n="metadata.printVersion">Print version (-V)</span></label>
+          <label><input id="show-help" type="checkbox" /> <span data-i18n="metadata.showHelp">Show help (-h)</span></label>
         </div>
 
-        <label>Album Metadata (-a)
-          <textarea id="album-metadata" rows="3" placeholder="album=Name:album_artist=Artist:date=2026"></textarea>
+        <label>
+          <span class="label-head">
+            <span data-i18n="metadata.albumMetadata">Album metadata (-a)</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.albumMetadata">i</span>
+          </span>
+          <textarea id="album-metadata" rows="3" data-i18n-placeholder="placeholder.albumMetadata" placeholder="album=Name:album_artist=Artist:date=2026"></textarea>
         </label>
-        <label>Track Metadata (-t), eine Zeile: <code>track=key=value:key=value</code>
-          <textarea id="track-metadata" rows="5" placeholder="1=title=Intro:artist=Band&#10;2=title=Main Song"></textarea>
+        <label>
+          <span class="label-head">
+            <span data-i18n="metadata.trackMetadata">Track metadata (-t)</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.trackMetadata">i</span>
+          </span>
+          <textarea id="track-metadata" rows="5" data-i18n-placeholder="placeholder.trackMetadata" placeholder="1=title=Intro:artist=Band&#10;2=title=Main Song"></textarea>
         </label>
 
         <div class="grid-3">
-          <label>Release (-R)
+          <label>
+            <span data-i18n="metadata.release">Release (-R)</span>
             <input id="release" type="text" spellcheck="false" />
           </label>
-          <label>Disc (-c)
+          <label>
+            <span data-i18n="metadata.disc">Disc (-c)</span>
             <input id="disc-number" type="number" min="1" />
           </label>
-          <label>Total Discs (-c)
+          <label>
+            <span data-i18n="metadata.totalDiscs">Total discs (-c)</span>
             <input id="total-discs" type="number" min="1" />
           </label>
         </div>
 
-        <label>Cover Art (-C), eine Zeile: <code>destination=path_or_url</code> oder nur <code>path_or_url</code>
-          <textarea id="cover-arts" rows="4" placeholder="Front=/tmp/cover.jpg&#10;2=/tmp/track2.jpg"></textarea>
+        <label>
+          <span class="label-head">
+            <span data-i18n="metadata.coverArt">Cover art (-C)</span>
+            <span class="hint" tabindex="0" data-tip-key="hint.coverArt">i</span>
+          </span>
+          <textarea id="cover-arts" rows="4" data-i18n-placeholder="placeholder.coverArts" placeholder="Front=/tmp/cover.jpg&#10;2=/tmp/track2.jpg"></textarea>
         </label>
 
-        <label>Cover Art max size (-m)
+        <label>
+          <span data-i18n="metadata.coverArtSize">Cover art max size (-m)</span>
           <select id="coverart-lookup-size"></select>
         </label>
       </section>
 
       <section class="panel panel-wide">
-        <h2>Live Log</h2>
+        <h2 data-i18n="log.title">Live log</h2>
         <pre id="job-log" class="terminal"></pre>
       </section>
     </main>

@@ -1,27 +1,35 @@
 # cyanrip-webui
 
-WebUI fuer `cyanrip` auf Linux. Das Projekt nutzt `cyanrip` unveraendert als externe CLI-Binary und baut nur eine grafische Steuer- und Anzeigeebene darum herum.
+`cyanrip-webui` is a Linux-first Web UI for `cyanrip`.
+It does not modify cyanrip itself; it only controls the cyanrip CLI process and visualizes scan/rip status.
 
-## Ziele
+## Goals
 
-- Keine Aenderungen am `cyanrip`-Sourcecode (`cyanrip-src-v0.9.3.1` bleibt read-only Referenz)
-- Lose Kopplung: WebUI arbeitet nur ueber CLI-Argumente und Prozessausgabe
-- Moeglichst wenige Dependencies (nur Flask + Python-Stdlib)
-- Vollstaendige Flag-Abdeckung der Cyanrip-CLI
+- No changes to cyanrip source code (`cyanrip-src/...` is read-only reference material)
+- Loose coupling: Web UI talks to cyanrip only through CLI args and process output
+- Minimal dependencies (Flask + Python stdlib)
+- Full cyanrip CLI flag coverage
+- Beginner-friendly hints with expert CLI notes
+- Disc scan before ripping, including track table and metadata
+- Track-level live progress and final status/AccurateRip info
+- Theme auto-detection (light/dark) with manual override
+- English as default language, with locale files and browser language detection
 
-## Projektstruktur
+## Project Layout
 
-- `app.py`: Flask-Entrypoint
-- `webui/app_factory.py`: Routen und API
-- `webui/command_builder.py`: Mapping UI-Daten -> cyanrip CLI
-- `webui/runner.py`: Start/Stop und Log-Streaming fuer laufende Jobs
-- `webui/templates/index.html`: Single-Page UI
-- `webui/static/style.css`, `webui/static/app.js`: Frontend
-- `tests/test_command_builder.py`: Unit-Tests fuer Argument-Building
+- `app.py`: Flask entrypoint
+- `webui/app_factory.py`: routes and API endpoints
+- `webui/command_builder.py`: UI config -> cyanrip args
+- `webui/runner.py`: background process runner and live logs
+- `webui/scan_parser.py`: parser for scan/rip output
+- `webui/templates/index.html`: single-page UI
+- `webui/static/style.css`, `webui/static/app.js`: frontend
+- `webui/static/i18n/*.json`: language files
+- `tests/*.py`: unit tests
 
-## Schnellstart
+## Quick Start
 
-1. Python venv erstellen und aktivieren.
+1. Create and activate a Python venv.
 
 ```bash
 python3 -m venv .venv
@@ -29,7 +37,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Cyanrip-Binary bereitstellen, z. B.:
+2. Provide a cyanrip binary, for example:
 
 ```bash
 mkdir -p bin
@@ -37,28 +45,29 @@ cp /usr/bin/cyanrip ./bin/cyanrip
 chmod +x ./bin/cyanrip
 ```
 
-3. WebUI starten:
+3. Start the web UI:
 
 ```bash
-python app.py
+python3 app.py
 ```
 
-4. Browser oeffnen: `http://127.0.0.1:8080`
+4. Open: `http://127.0.0.1:8080`
 
-## API-Endpunkte
+## API Endpoints
 
-- `POST /api/preview`: Command aus UI-Daten bauen
-- `POST /api/start`: Rip-Job starten
-- `POST /api/stop`: laufenden Job stoppen
-- `GET /api/status`: Job-Status
-- `GET /api/logs?since=<index>`: inkrementelle Logs
-- `POST /api/probe`: `-V`/`-h` gegen Binary pruefen
+- `POST /api/preview`: build command preview from UI config
+- `POST /api/start`: start rip job
+- `POST /api/scan`: scan disc via `cyanrip -I`
+- `POST /api/stop`: stop running job
+- `GET /api/status`: job status snapshot
+- `GET /api/logs?since=<index>`: incremental logs
+- `POST /api/probe`: run `-V` and `-h` against the selected binary
 
-## Hinweise
+## Notes
 
-- `working_directory` bestimmt, von wo aus cyanrip gestartet wird.
-- Mehrfachoptionen (`-t`, `-p`, `-C`) werden ueber zeilenbasierte Eingaben in der UI abgebildet.
-- Aktuell auf Linux ausgerichtet; Plattformabhaengigkeiten wurden auf minimale Dateipfade/Prozesssteuerung begrenzt.
+- `working_directory` defaults to `./output`.
+- Multi-entry args (`-t`, `-p`, `-C`) are mapped via line-based UI inputs.
+- Current target platform is Linux.
 
 ## Tests
 
