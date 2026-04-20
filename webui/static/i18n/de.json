@@ -6,8 +6,8 @@
     }
   },
   "hero": {
-    "eyebrow": "Linux-zentrierte CD-Ripping-Steuerung",
-    "subtitle": "Komfortable Steuerung fuer cyanrip mit gefuehrten Optionen und voller Experten-Transparenz."
+    "eyebrow": "Akkurate Audio-CD-Extraktion",
+    "subtitle": "Grafische Oberfläche für cyanrip mit umfassenden Konfigurationsoptionen."
   },
   "toolbar": {
     "language": "Sprache",
@@ -67,7 +67,8 @@
   },
   "button": {
     "scan": "CD scannen",
-    "verifyBinary": "Binary pruefen",
+    "openDrive": "Laufwerk öffnen",
+    "verifyBinary": "Binary prüfen",
     "commandPreview": "Command-Preview",
     "startRip": "Rip starten",
     "stop": "Stop"
@@ -75,7 +76,7 @@
   "ripping": {
     "title": "Ripping",
     "offset": "Offset (-s)",
-    "devicePath": "Geraetepfad (-d)",
+    "devicePath": "Gerätepfad (-d)",
     "maxRetries": "Max retries (-r)",
     "checksumRetries": "Checksum retries (-Z)",
     "speed": "Speed (-S)",
@@ -90,7 +91,7 @@
   },
   "output": {
     "title": "Output",
-    "note": "Formate und Benennung waehlen. Das Default-Profil ist auf sichere FLAC-Rips ausgelegt.",
+    "note": "Formate und Benennung wählen. Das Default-Profil ist auf sichere FLAC-Rips ausgelegt.",
     "bitrate": "Bitrate kbps (-b)",
     "sanitation": "Sanitation (-T)",
     "directoryScheme": "Directory-Schema (-D)",
@@ -115,7 +116,7 @@
     "disc": "Disc (-c)",
     "totalDiscs": "Anzahl Discs (-c)",
     "coverArt": "Cover-Art (-C)",
-    "coverArtSize": "Cover-Art Max-Groesse (-m)"
+    "coverArtSize": "Cover-Art Max-Größe (-m)"
   },
   "log": {
     "title": "Live-Log"
@@ -130,11 +131,11 @@
   "hint": {
     "binaryPath": "Pfad zur cyanrip-Binary. Expertennotiz: Das ist der Executable-Pfad, kein cyanrip-Flag.",
     "workingDirectory": "Default ist ./output. Dort erstellt cyanrip seine Album-Ordner. Expertennotiz: Das ist das Prozess-CWD, kein cyanrip-Flag.",
-    "offset": "Drive-Offset in Samples. Fuer Einsteiger meist auf 0 lassen.",
+    "offset": "Drive-Offset in Samples. Für Einsteiger meist auf 0 lassen.",
     "devicePath": "Optionaler Laufwerkspfad wie /dev/sr0.",
-    "maxRetries": "Frame-Retries bei Lesefehlern. Hoehere Werte helfen bei schwierigen CDs.",
-    "checksumRetries": "Wiederholt das Rippen, bis Checksummen so oft uebereinstimmen.",
-    "paranoia": "none, max oder eine Zahl. Fuer sichere Rips ist max meist sinnvoll.",
+    "maxRetries": "Frame-Retries bei Lesefehlern. Höhere Werte helfen bei schwierigen CDs.",
+    "checksumRetries": "Wiederholt das Rippen, bis Checksummen so oft übereinstimmen.",
+    "paranoia": "none, max oder eine Zahl. Für sichere Rips ist max meist sinnvoll.",
     "pregapRules": "Eine Regel pro Zeile: track=default|drop|merge|track.",
     "sanitation": "Dateinamensanitisierung. unicode ist guter Default; simple ersetzt kritische Zeichen mit _.",
     "trackSelection": "CSV wie 1,2,5. Leer bedeutet: alle Tracks.",
@@ -151,18 +152,20 @@
     "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg"
   },
   "message": {
-    "probingBinary": "Binary wird geprueft...",
+    "probingBinary": "Binary wird geprüft...",
+    "ejectingDrive": "Laufwerk wird geöffnet...",
+    "ejectDone": "Laufwerk geöffnet.",
     "noOutput": "<keine Ausgabe>"
   },
   "error": {
     "trackLabel": "Tracknummer",
     "integer": "Ganzzahl",
-    "integerLabel": "{label} ist keine gueltige Ganzzahl.",
-    "float": "Ungueltiger numerischer Wert: {value}",
+    "integerLabel": "{label} ist keine gültige Ganzzahl.",
+    "float": "Ungültiger numerischer Wert: {value}",
     "pregapFormat": "Pregap-Regel in Zeile {line} muss track=action sein.",
     "pregapActionMissing": "Pregap-Action fehlt in Zeile {line}.",
-    "trackMetadataFormat": "Track-Metadaten in Zeile {line} muessen track=metadata sein.",
+    "trackMetadataFormat": "Track-Metadaten in Zeile {line} müssen track=metadata sein.",
     "coverArtFormat": "Cover-Art-Zeile {line} muss destination=source sein.",
-    "coverArtIncomplete": "Cover-Art-Zeile {line} ist unvollstaendig."
+    "coverArtIncomplete": "Cover-Art-Zeile {line} ist unvollständig."
   }
 }

@@ -1,7 +1,0 @@
-Das meiste ist schon mal sehr gut, wir bräuchten noch folgendes:
-
-- Die Animation der Statusbox oben rechts ist gut, aber könnte noch deutlich prägnanter sein, aktuell muss man sehr genau hinsehen um sie zu erkennen. Auch die Animation des Hintergrundes ist nicht gut sichtbar und könnte deutlich sichtbarer sein, ohne dabei aufdringlich zu wirken. Die Animation der Fortschrittsbalken sollten wir auch ändern, sie sollte nicht so aufblinken sondern eher von links nach rechts gehen, z.B. so ein helleres Highlight im Balken, das von links nach rechts geht.
-
-- Wenn man die Seite neu aufmacht oder neu lädt, sollte die vollständige Trackliste und der gesamte Status wieder geladen werden, also das Backend sollte den gesamten Status und Prozess komplett wieder an das Frontend übergeben können.
-
-- Es sollte einen Button geben um das CD Laufwerk zu öffnen.

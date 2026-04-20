@@ -126,6 +126,7 @@ def create_app() -> Flask:
                 text=True,
                 timeout=1800,
                 check=False,
+                env=_build_process_env(),
             )
         except FileNotFoundError:
             return jsonify({"error": f"Binary nicht gefunden: {binary_path}"}), 400
@@ -150,13 +151,64 @@ def create_app() -> Flask:
 
         if completed.returncode != 0:
             payload_out["error"] = f"CD-Scan fehlgeschlagen (Exit-Code {completed.returncode})."
+            runner.update_scan_result(
+                parsed["disc"],
+                parsed["tracks"],
+                returncode=completed.returncode,
+                error=payload_out["error"],
+            )
             return jsonify(payload_out), 422
 
+        runner.update_scan_result(parsed["disc"], parsed["tracks"], returncode=completed.returncode)
         return jsonify(payload_out), 200
 
     @app.post("/api/stop")
     def stop() -> Any:
         return jsonify(runner.stop())
+
+    @app.post("/api/eject")
+    def eject_drive() -> Any:
+        if runner.snapshot()["is_running"]:
+            return jsonify({"error": "Waehrend eines laufenden Rip-Jobs kann das Laufwerk nicht geoeffnet werden."}), 409
+
+        payload = _json_payload()
+        device_path = str(payload.get("device_path", "")).strip()
+
+        command = ["eject"]
+        if device_path:
+            command.append(device_path)
+
+        try:
+            completed = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+        except FileNotFoundError:
+            return jsonify({"error": "Das Kommando 'eject' wurde nicht gefunden."}), 400
+        except PermissionError:
+            return jsonify({"error": "Keine Berechtigung, um das Laufwerk auszuwerfen."}), 403
+        except subprocess.TimeoutExpired:
+            return jsonify({"error": "Auswurf hat das Timeout erreicht."}), 504
+        except OSError as exc:
+            return jsonify({"error": f"Auswurf fehlgeschlagen: {exc}"}), 500
+
+        normalized_output = _normalize_output(completed.stdout or "")
+        payload_out = {
+            "returncode": completed.returncode,
+            "command": command,
+            "output_preview": "\n".join(normalized_output.splitlines()[:40]),
+        }
+
+        if completed.returncode != 0:
+            payload_out["error"] = f"Auswurf fehlgeschlagen (Exit-Code {completed.returncode})."
+            return jsonify(payload_out), 422
+
+        payload_out["message"] = "Laufwerk wurde geoeffnet."
+        return jsonify(payload_out), 200
 
     @app.get("/api/status")
     def status() -> Any:
@@ -233,6 +285,10 @@ def _json_payload() -> dict[str, Any]:
 def _normalize_output(raw_output: str) -> str:
     # cyanrip writes progress updates with carriage returns; normalize those for parsing/UI.
     return raw_output.replace("\r", "\n")
+
+
+def _build_process_env() -> dict[str, str]:
+    return os.environ.copy()
 
 
 def _resolve_working_directory(raw_value: str) -> str:

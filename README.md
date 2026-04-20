@@ -59,6 +59,7 @@ python3 app.py
 - `POST /api/start`: start rip job
 - `POST /api/scan`: scan disc via `cyanrip -I`
 - `POST /api/stop`: stop running job
+- `POST /api/eject`: open CD drive tray via `eject`
 - `GET /api/status`: job status snapshot
 - `GET /api/logs?since=<index>`: incremental logs
 - `POST /api/probe`: run `-V` and `-h` against the selected binary

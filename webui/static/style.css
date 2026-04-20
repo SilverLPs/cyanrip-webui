@@ -1,13 +1,18 @@
 :root {
   --bg-top: #e8fbff;
   --bg-bottom: #fff5dd;
+  --bg-ambient-a: rgba(0, 123, 131, 0.35);
+  --bg-ambient-b: rgba(255, 165, 0, 0.3);
+  --bg-pattern-a: rgba(0, 134, 148, 0.33);
+  --bg-pattern-b: rgba(255, 174, 72, 0.29);
   --ink: #13263a;
   --ink-soft: #32506a;
   --line: #9cc0d6;
   --accent: #007b83;
   --accent-strong: #005c63;
   --danger: #8b1d22;
-  --panel: rgba(255, 255, 255, 0.9);
+  --panel: rgba(255, 255, 255, 0.96);
+  --status-card-bg: rgba(255, 255, 255, 0.97);
   --terminal: #041f2a;
   --terminal-ink: #bbf2ff;
   --table-head: rgba(0, 123, 131, 0.09);
@@ -15,19 +20,25 @@
   --hint-ink: #eff8ff;
   --progress-bg: #d3e7f5;
   --progress-fill: linear-gradient(90deg, #0d9aa5 0%, #00c2a2 100%);
+  --progress-highlight: rgba(255, 255, 255, 0.7);
   --placeholder: #7f9ab1;
 }
 
 :root[data-theme="dark"] {
   --bg-top: #0f1a24;
   --bg-bottom: #1b222d;
+  --bg-ambient-a: rgba(12, 133, 165, 0.3);
+  --bg-ambient-b: rgba(240, 170, 60, 0.22);
+  --bg-pattern-a: rgba(72, 202, 230, 0.24);
+  --bg-pattern-b: rgba(255, 198, 104, 0.2);
   --ink: #d8ecff;
   --ink-soft: #9ec0de;
   --line: #35506a;
   --accent: #11a8b1;
   --accent-strong: #0a7f86;
   --danger: #cb6565;
-  --panel: rgba(17, 28, 39, 0.92);
+  --panel: rgba(17, 28, 39, 0.96);
+  --status-card-bg: rgba(22, 34, 46, 0.97);
   --terminal: #091723;
   --terminal-ink: #b9f0ff;
   --table-head: rgba(17, 168, 177, 0.15);
@@ -35,6 +46,7 @@
   --hint-ink: #10273b;
   --progress-bg: #26394b;
   --progress-fill: linear-gradient(90deg, #13b5bf 0%, #00d7af 100%);
+  --progress-highlight: rgba(200, 252, 255, 0.5);
   --placeholder: #7391ad;
 }
 
@@ -42,13 +54,18 @@
   :root:not([data-theme="light"]) {
     --bg-top: #0f1a24;
     --bg-bottom: #1b222d;
+    --bg-ambient-a: rgba(12, 133, 165, 0.3);
+    --bg-ambient-b: rgba(240, 170, 60, 0.22);
+    --bg-pattern-a: rgba(72, 202, 230, 0.24);
+    --bg-pattern-b: rgba(255, 198, 104, 0.2);
     --ink: #d8ecff;
     --ink-soft: #9ec0de;
     --line: #35506a;
     --accent: #11a8b1;
     --accent-strong: #0a7f86;
     --danger: #cb6565;
-    --panel: rgba(17, 28, 39, 0.92);
+    --panel: rgba(17, 28, 39, 0.96);
+    --status-card-bg: rgba(22, 34, 46, 0.97);
     --terminal: #091723;
     --terminal-ink: #b9f0ff;
     --table-head: rgba(17, 168, 177, 0.15);
@@ -56,6 +73,7 @@
     --hint-ink: #10273b;
     --progress-bg: #26394b;
     --progress-fill: linear-gradient(90deg, #13b5bf 0%, #00d7af 100%);
+    --progress-highlight: rgba(200, 252, 255, 0.5);
     --placeholder: #7391ad;
   }
 }
@@ -67,25 +85,85 @@
 body {
   margin: 0;
   min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
   font-family: "Source Sans 3", "Fira Sans", "Trebuchet MS", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 92% 8%, rgba(0, 123, 131, 0.24), transparent 24%),
-    radial-gradient(circle at 6% 92%, rgba(255, 165, 0, 0.22), transparent 28%),
+    radial-gradient(circle at -6% -20%, var(--bg-ambient-a), transparent 72%),
+    radial-gradient(circle at 106% -20%, var(--bg-ambient-b), transparent 74%),
     linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
-  background-size: 140% 140%, 150% 150%, 100% 100%;
-  animation: bg-drift 18s ease-in-out infinite;
+  background-size: 100% 100%, 100% 100%, 100% 100%;
 }
 
-:root[data-animations="off"] body {
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -960px;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+  background-repeat: repeat;
+  background-position: 0 0;
+}
+
+body::before {
+  background-image:
+    radial-gradient(190px 22px at 12% 18%, var(--bg-pattern-a) 0 55%, transparent 66%),
+    radial-gradient(150px 16px at 38% 34%, var(--bg-pattern-a) 0 56%, transparent 67%),
+    radial-gradient(210px 20px at 66% 22%, var(--bg-pattern-a) 0 54%, transparent 66%),
+    radial-gradient(170px 18px at 82% 58%, var(--bg-pattern-a) 0 56%, transparent 68%),
+    radial-gradient(230px 24px at 28% 76%, var(--bg-pattern-a) 0 54%, transparent 66%),
+    radial-gradient(145px 16px at 56% 84%, var(--bg-pattern-a) 0 56%, transparent 67%),
+    radial-gradient(180px 20px at 90% 86%, var(--bg-pattern-a) 0 54%, transparent 66%);
+  background-size: 960px 960px;
+  background-position: 310px -170px;
+  transform: rotate(-28deg) translate3d(160px, -240px, 0);
+  opacity: 0.58;
+  animation: bg-pattern-slide-a 50s linear infinite;
+  animation-delay: -31s;
+}
+
+body::after {
+  background-image:
+    radial-gradient(155px 18px at 10% 28%, var(--bg-pattern-b) 0 55%, transparent 67%),
+    radial-gradient(205px 20px at 34% 14%, var(--bg-pattern-b) 0 54%, transparent 66%),
+    radial-gradient(135px 14px at 58% 42%, var(--bg-pattern-b) 0 56%, transparent 68%),
+    radial-gradient(180px 20px at 80% 24%, var(--bg-pattern-b) 0 54%, transparent 66%),
+    radial-gradient(220px 22px at 22% 66%, var(--bg-pattern-b) 0 54%, transparent 66%),
+    radial-gradient(145px 16px at 62% 74%, var(--bg-pattern-b) 0 56%, transparent 68%),
+    radial-gradient(195px 20px at 88% 82%, var(--bg-pattern-b) 0 54%, transparent 66%);
+  background-size: 720px 720px;
+  background-position: -250px 210px;
+  transform: rotate(26deg) translate3d(-120px, 180px, 0);
+  opacity: 0.46;
+  animation: bg-pattern-slide-b 40s linear infinite;
+  animation-delay: -47s;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+:root[data-animations="off"] body,
+:root[data-animations="off"] body::before,
+:root[data-animations="off"] body::after {
   animation: none;
 }
 
 .hero {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(420px, 40vw, 620px);
+  align-items: start;
   gap: 1rem;
   padding: 1.2rem 1.2rem 0.8rem;
+}
+
+.hero > :first-child {
+  min-width: 0;
 }
 
 .hero-side {
@@ -93,12 +171,19 @@ body {
   flex-direction: column;
   gap: 0.55rem;
   align-items: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(140px, 170px) minmax(140px, 1fr) minmax(140px, 1fr);
+  grid-template-columns: 170px repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
+  align-items: stretch;
+}
+
+.toolbar > * {
+  min-width: 0;
 }
 
 .mini-control {
@@ -106,6 +191,11 @@ body {
   margin: 0;
   font-size: 0.78rem;
   color: var(--ink-soft);
+}
+
+.mini-control > span {
+  display: block;
+  min-height: 1rem;
 }
 
 .mini-control select {
@@ -121,6 +211,10 @@ body {
   font-family: "Source Sans 3", "Fira Sans", "Trebuchet MS", sans-serif;
   font-size: 0.82rem;
   margin: 0;
+  min-height: 2.35rem;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -129,6 +223,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.11em;
   color: var(--ink-soft);
+  min-height: 1rem;
 }
 
 h1 {
@@ -141,14 +236,52 @@ h1 {
 .subtitle {
   margin: 0;
   color: var(--ink-soft);
+  max-width: 62ch;
+  min-height: 2.45rem;
 }
 
 .status-card {
   min-width: 260px;
+  min-height: 7.5rem;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--panel);
+  position: relative;
+  overflow: hidden;
+  background: var(--status-card-bg);
   padding: 0.7rem 0.8rem;
+  box-shadow: 0 2px 12px rgba(7, 44, 68, 0.08);
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.status-card::before {
+  content: "";
+  position: absolute;
+  inset: -70% -140%;
+  background: linear-gradient(90deg, transparent 0%, rgba(29, 190, 178, 0.2) 48%, transparent 100%);
+  transform: translateX(-65%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.status-card.active {
+  border-color: rgba(12, 165, 171, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(9, 160, 167, 0.18),
+    0 8px 20px rgba(7, 54, 72, 0.2);
+}
+
+.status-card.active::before {
+  opacity: 1;
+  animation: status-sweep 2.3s linear infinite;
+}
+
+.status-card.success {
+  border-color: rgba(18, 160, 87, 0.72);
+}
+
+.status-card.error {
+  border-color: rgba(193, 70, 70, 0.8);
 }
 
 .status-card p {
@@ -164,18 +297,28 @@ h1 {
   gap: 0.45rem;
   margin-top: 0.32rem;
   font-size: 1.06rem;
+  min-height: 1.45rem;
 }
 
-.status-card span {
+.status-card > span {
   display: block;
   margin-top: 0.24rem;
   font-size: 0.86rem;
   color: var(--ink-soft);
+  min-height: 1.2rem;
 }
 
 .status-indicator {
-  width: 0.72rem;
-  height: 0.72rem;
+  display: inline-block;
+  width: 0.84rem;
+  height: 0.84rem;
+  min-width: 0.84rem;
+  min-height: 0.84rem;
+  max-width: 0.84rem;
+  max-height: 0.84rem;
+  flex: 0 0 auto;
+  align-self: center;
+  box-sizing: border-box;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: #8aa3b8;
@@ -184,7 +327,7 @@ h1 {
 
 .status-indicator.active {
   background: #10a8b1;
-  animation: pulse-dot 1s ease-in-out infinite;
+  animation: pulse-dot 1.15s ease-in-out infinite;
 }
 
 .status-indicator.success {
@@ -199,6 +342,10 @@ h1 {
   animation: none !important;
 }
 
+:root[data-animations="off"] .status-card::before {
+  animation: none !important;
+}
+
 .layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -210,7 +357,6 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--panel);
-  backdrop-filter: blur(4px);
   padding: 0.85rem;
   box-shadow: 0 3px 10px rgba(16, 54, 86, 0.08);
 }
@@ -331,6 +477,10 @@ textarea {
 button {
   cursor: pointer;
   transition: transform 120ms ease, background 120ms ease;
+  min-height: 2.35rem;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 button:hover {
@@ -570,21 +720,49 @@ button.danger {
 }
 
 .progress-fill {
+  position: relative;
+  overflow: hidden;
   height: 100%;
   width: 0%;
   background: var(--progress-fill);
-  transition: width 160ms ease;
-  background-size: 240% 100%;
+  transition: width 180ms linear;
+}
+
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -55%;
+  width: 55%;
+  height: 100%;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    var(--progress-highlight) 48%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .track-running .progress-fill {
-  animation: progress-flow 1.2s linear infinite;
+  background-size: 100% 100%;
+}
+
+.track-running .progress-fill::after {
+  opacity: 1;
+  animation: progress-sheen 1.35s linear infinite;
 }
 
 :root[data-animations="off"] .progress-fill,
 :root[data-animations="off"] .track-running .progress-fill {
   animation: none;
   transition: none;
+}
+
+:root[data-animations="off"] .progress-fill::after,
+:root[data-animations="off"] .track-running .progress-fill::after {
+  animation: none;
+  opacity: 0;
 }
 
 .progress-pct {
@@ -623,36 +801,61 @@ button.danger {
   white-space: pre-wrap;
 }
 
-@keyframes bg-drift {
+@keyframes bg-pattern-slide-a {
   0% {
-    background-position: 0% 0%, 100% 100%, 50% 50%;
-  }
-  50% {
-    background-position: 100% 0%, 0% 100%, 50% 60%;
+    transform: rotate(-28deg) translate3d(160px, -240px, 0);
   }
   100% {
-    background-position: 0% 0%, 100% 100%, 50% 50%;
+    transform: rotate(-28deg) translate3d(1120px, -1200px, 0);
   }
 }
 
-@keyframes progress-flow {
+@keyframes bg-pattern-slide-b {
   0% {
-    background-position: 0% 0%;
+    transform: rotate(26deg) translate3d(-120px, 180px, 0);
   }
   100% {
-    background-position: 100% 0%;
+    transform: rotate(26deg) translate3d(600px, -540px, 0);
+  }
+}
+
+@keyframes progress-sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+@keyframes status-sweep {
+  0% {
+    transform: translateX(-70%);
+  }
+  100% {
+    transform: translateX(75%);
   }
 }
 
 @keyframes pulse-dot {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 168, 177, 0.45);
+    box-shadow: 0 0 0 0 rgba(16, 168, 177, 0.52);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(16, 168, 177, 0);
+    box-shadow: 0 0 0 12px rgba(16, 168, 177, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(16, 168, 177, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after,
+  .status-card::before,
+  .status-indicator.active,
+  .track-running .progress-fill::after {
+    animation: none !important;
   }
 }
 
@@ -668,7 +871,7 @@ button.danger {
 
 @media (max-width: 840px) {
   .hero {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .toolbar {

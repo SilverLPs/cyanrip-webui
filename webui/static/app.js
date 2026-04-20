@@ -10,6 +10,7 @@
   const COOKIE_THEME = "cyanrip_theme_mode";
   const COOKIE_LANG = "cyanrip_language";
   const COOKIE_ANIM = "cyanrip_animations";
+  const COOKIE_OFFSET = "cyanrip_offset";
 
   const state = {
     previewTimer: null,
@@ -70,12 +71,16 @@
     el("probe-binary").addEventListener("click", probeBinary);
     el("refresh-preview").addEventListener("click", refreshPreview);
     el("scan-disc").addEventListener("click", scanDisc);
+    el("open-drive").addEventListener("click", openDrive);
     el("start-job").addEventListener("click", startJob);
     el("stop-job").addEventListener("click", stopJob);
 
     el("theme-toggle").addEventListener("click", cycleThemeMode);
     el("animation-toggle").addEventListener("click", toggleAnimations);
     el("language-select").addEventListener("change", onLanguageChanged);
+    el("offset").addEventListener("input", persistOffsetPreference);
+    el("offset").addEventListener("change", persistOffsetPreference);
+    el("offset").addEventListener("blur", persistOffsetPreference);
 
     document.querySelectorAll("input,select,textarea").forEach((node) => {
       node.addEventListener("input", debouncePreview);
@@ -263,6 +268,25 @@
 
     const cookieAnim = String(getCookie(COOKIE_ANIM) || "").trim().toLowerCase();
     state.animationsEnabled = cookieAnim !== "off";
+
+    const cookieOffset = String(getCookie(COOKIE_OFFSET) || "").trim();
+    if (/^-?\d+$/.test(cookieOffset)) {
+      el("offset").value = String(Number.parseInt(cookieOffset, 10));
+    }
+  }
+
+  function persistOffsetPreference() {
+    const raw = String(el("offset").value || "").trim();
+    if (!raw) {
+      setCookie(COOKIE_OFFSET, "", 0);
+      return;
+    }
+
+    if (!/^-?\d+$/.test(raw)) {
+      return;
+    }
+
+    setCookie(COOKIE_OFFSET, String(Number.parseInt(raw, 10)));
   }
 
   function cycleThemeMode() {
@@ -438,6 +462,27 @@
     }
   }
 
+  async function openDrive() {
+    clearError();
+    setMessage("probe-result", t("message.ejectingDrive"));
+
+    try {
+      const result = await apiPost("/api/eject", {
+        device_path: el("device-path").value.trim(),
+      });
+
+      const lines = [];
+      lines.push(result.message || t("message.ejectDone"));
+      if (result.output_preview) {
+        lines.push(result.output_preview);
+      }
+      setMessage("probe-result", lines.filter(Boolean).join("\n"));
+    } catch (err) {
+      showError(err.message);
+      setMessage("probe-result", "");
+    }
+  }
+
   async function refreshPreview() {
     clearError();
 
@@ -508,6 +553,8 @@
         el("job-log").textContent = "";
       }
 
+      hydrateRuntimeFromStatus(status);
+
       if (status.log_oldest_index !== undefined && status.log_oldest_index !== null) {
         if (state.nextLogIndex === null) {
           state.nextLogIndex = status.log_oldest_index;
@@ -531,9 +578,109 @@
     }
   }
 
+  function hydrateRuntimeFromStatus(status) {
+    const scan = status && typeof status.scan === "object" ? status.scan : {};
+    const disc = status && typeof status.disc === "object" ? status.disc : {};
+    const rip = status && typeof status.rip === "object" ? status.rip : {};
+
+    const discInfo = disc && typeof disc.info === "object" ? disc.info : null;
+    const discTracks = Array.isArray(disc.tracks) ? disc.tracks : [];
+    if (discInfo) {
+      state.discInfo = discInfo;
+    }
+    if (discTracks.length > 0) {
+      state.discTracks = discTracks;
+    }
+
+    const ripTracks = Array.isArray(rip.tracks) ? rip.tracks : [];
+    if (ripTracks.length > 0) {
+      applyRipTracksSnapshot(ripTracks);
+    } else if (state.trackRows.size === 0 && state.discTracks.length > 0) {
+      renderScannedDisc(state.discInfo || {}, state.discTracks);
+    }
+
+    const backendDiscTracks = normalizeOptionalInt(rip.disc_tracks);
+    if (backendDiscTracks !== null) {
+      state.ripMeta.discTracks = backendDiscTracks;
+    }
+
+    if (Array.isArray(rip.planned_track_numbers)) {
+      const planned = normalizeTrackSelection(rip.planned_track_numbers);
+      state.ripMeta.plannedTrackNumbers = new Set(planned);
+    } else if (rip.planned_track_numbers === null) {
+      state.ripMeta.plannedTrackNumbers = null;
+    }
+
+    const totalTracks = normalizeOptionalInt(rip.total_tracks);
+    if (totalTracks !== null) {
+      state.ripMeta.totalTracks = totalTracks;
+    }
+
+    const currentTrackNo = normalizeOptionalInt(rip.current_track_no);
+    if (currentTrackNo !== null) {
+      state.ripMeta.currentTrackNo = currentTrackNo;
+    } else if (!status.is_running) {
+      state.ripMeta.currentTrackNo = null;
+    }
+
+    const currentProgress = Number.parseFloat(String(rip.current_track_progress));
+    if (!Number.isNaN(currentProgress)) {
+      state.ripMeta.currentTrackProgress = clamp(currentProgress, 0, 100);
+    } else if (!status.is_running) {
+      state.ripMeta.currentTrackProgress = 0;
+    }
+
+    if (typeof rip.eta === "string" && rip.eta.trim()) {
+      state.ripMeta.eta = rip.eta.trim();
+    } else if (rip.eta === null || !status.is_running) {
+      state.ripMeta.eta = null;
+    }
+
+    state.lastScanSuccess = !status.is_running && !!scan.last_success;
+    renderDiscSummary();
+  }
+
+  function applyRipTracksSnapshot(tracks) {
+    if (state.trackRows.size === 0) {
+      el("tracks-body").innerHTML = "";
+      state.activeTrackNo = null;
+    }
+
+    const seen = new Set();
+    tracks.forEach((track) => {
+      const trackNo = normalizeOptionalInt(track.number);
+      if (trackNo === null || trackNo <= 0) {
+        return;
+      }
+
+      seen.add(trackNo);
+      upsertTrackRow(trackNo, {
+        title: track.title || `Track ${String(trackNo).padStart(2, "0")}`,
+        artist: track.artist || "",
+        duration: track.duration || "",
+        status: track.status || "detected",
+        progress: Number(track.progress || 0),
+        accuripText: track.accurip_text || track.accurip || "",
+        accuripConfidence: normalizeOptionalInt(track.accurip_confidence),
+        accuripMaxConfidence: normalizeOptionalInt(track.accurip_max_confidence),
+      });
+    });
+
+    state.trackRows.forEach((row, trackNo) => {
+      if (seen.has(trackNo)) {
+        return;
+      }
+      row.tr.remove();
+      state.trackRows.delete(trackNo);
+    });
+
+    el("tracks-empty").style.display = tracks.length > 0 ? "none" : "block";
+  }
+
   function updateStatusPanel() {
     const statusLabel = el("status-label");
     const statusIndicator = el("status-indicator");
+    const statusCard = el("status-card");
 
     const status = state.runnerStatus;
     const isRunning = !!(status && status.is_running);
@@ -580,6 +727,15 @@
 
     if (indicatorActive) {
       statusIndicator.classList.add("active");
+    }
+
+    statusCard.classList.remove("active", "success", "error");
+    if (indicatorActive) {
+      statusCard.classList.add("active");
+    } else if (indicatorClass === "success") {
+      statusCard.classList.add("success");
+    } else if (indicatorClass === "error") {
+      statusCard.classList.add("error");
     }
 
     const progress = computeOverallRipProgress();
@@ -632,6 +788,10 @@
 
     if (total <= 0 && planned && planned.size > 0) {
       total = planned.size;
+    }
+
+    if (total <= 0 && planned && planned.size === 0) {
+      return { done: 0, total: 0, percent: 0 };
     }
 
     if (total <= 0 && state.ripMeta.discTracks) {

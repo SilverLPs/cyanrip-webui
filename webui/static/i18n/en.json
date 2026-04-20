@@ -6,8 +6,8 @@
     }
   },
   "hero": {
-    "eyebrow": "Linux-first CD ripping control",
-    "subtitle": "Comfortable control for cyanrip with guided options and expert transparency."
+    "eyebrow": "Accurate audio CD extraction",
+    "subtitle": "Graphical interface for cyanrip with comprehensive configuration options."
   },
   "toolbar": {
     "language": "Language",
@@ -67,6 +67,7 @@
   },
   "button": {
     "scan": "Scan disc",
+    "openDrive": "Open drive",
     "verifyBinary": "Verify binary",
     "commandPreview": "Command preview",
     "startRip": "Start rip",
@@ -152,6 +153,8 @@
   },
   "message": {
     "probingBinary": "Checking binary...",
+    "ejectingDrive": "Opening drive...",
+    "ejectDone": "Drive opened.",
     "noOutput": "<no output>"
   },
   "error": {

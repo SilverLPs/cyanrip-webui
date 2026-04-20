@@ -9,9 +9,9 @@
   <body>
     <header class="hero">
       <div>
-        <p class="eyebrow" data-i18n="hero.eyebrow">Linux-first CD ripping control</p>
+        <p class="eyebrow" data-i18n="hero.eyebrow">Accurate audio CD extraction</p>
         <h1>cyanrip-webui</h1>
-        <p class="subtitle" data-i18n="hero.subtitle">Comfortable control for cyanrip with guided options and expert transparency.</p>
+        <p class="subtitle" data-i18n="hero.subtitle">Graphical interface for cyanrip with comprehensive configuration options.</p>
       </div>
       <div class="hero-side">
         <div class="toolbar">
@@ -22,7 +22,7 @@
           <button id="theme-toggle" class="toolbar-button" type="button">Theme: Auto</button>
           <button id="animation-toggle" class="toolbar-button" type="button">Animations: On</button>
         </div>
-        <div class="status-card">
+        <div id="status-card" class="status-card">
           <p data-i18n="status.title">Status</p>
           <strong id="status-state">
             <span id="status-label">Idle</span>
@@ -77,6 +77,7 @@
 
         <div class="actions actions-runtime">
           <button id="scan-disc" type="button" data-i18n="button.scan">Scan disc</button>
+          <button id="open-drive" type="button" data-i18n="button.openDrive">Open drive</button>
           <button id="probe-binary" type="button" data-i18n="button.verifyBinary">Verify binary</button>
           <button id="refresh-preview" type="button" data-i18n="button.commandPreview">Command preview</button>
           <button id="start-job" type="button" class="accent" data-i18n="button.startRip">Start rip</button>
