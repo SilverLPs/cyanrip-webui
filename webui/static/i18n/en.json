@@ -7,10 +7,9 @@
   },
   "hero": {
     "eyebrow": "Accurate audio CD extraction",
-    "subtitle": "Graphical interface for cyanrip with comprehensive configuration options."
+    "subtitle": "Integrated rip workflow for cyanrip. Scan, review metadata, then rip with reliable session tracking."
   },
   "toolbar": {
-    "language": "Language",
     "theme": {
       "auto": "Theme: Auto ({resolved})",
       "fixed": "Theme: {mode}",
@@ -23,6 +22,10 @@
     "animations": {
       "on": "Animations: On",
       "off": "Animations: Off"
+    },
+    "workspace": {
+      "phaseAdaptive": "Layout mode: Focus by phase (click to show all options)",
+      "showAll": "Layout mode: All options visible (click to focus by phase)"
     }
   },
   "status": {
@@ -30,23 +33,63 @@
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
+    "scanRequired": "Rescan required",
     "ripping": "Ripping",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
     "tracks": "Tracks: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning"
+    "etaScanning": "Scanning",
+    "session": "Session: {id}"
+  },
+  "session": {
+    "title": "Session"
+  },
+  "action": {
+    "scan": "Scan disc",
+    "start": "Start rip",
+    "stop": "Stop current action",
+    "eject": "Open drive",
+    "backToScan": "Back to scan phase",
+    "infoOnlyOn": "Info only: enabled",
+    "infoOnlyOff": "Info only: disabled",
+    "advanced": "Show advanced",
+    "advancedHide": "Hide advanced"
+  },
+  "workflow": {
+    "phaseLine": "Phase: {phase}",
+    "phase": {
+      "preScan": "Scan preparation",
+      "postScan": "Review and setup",
+      "ripping": "Ripping in progress",
+      "postRip": "Rip results"
+    },
+    "step": {
+      "preScan": "1. Scan disc",
+      "postScan": "2. Review and adjust",
+      "postRip": "3. Rip results"
+    }
+  },
+  "workspace": {
+    "relevant": "Show relevant options",
+    "showAll": "Show all options"
   },
   "disc": {
     "title": "Disc",
     "empty": "No disc scanned yet.",
+    "meta": {
+      "album": "Album",
+      "artist": "Album artist",
+      "date": "Date"
+    },
     "summary": {
       "album": "Album",
       "artist": "Artist",
       "tracks": "Tracks",
       "totalTime": "Total time",
-      "accuraterip": "AccurateRip DB"
+      "accuraterip": "AccurateRip DB",
+      "maxConfidence": "max confidence: {value}"
     },
     "unknownAlbum": "Unknown album",
     "unknownArtist": "Unknown artist"
@@ -60,66 +103,123 @@
     "progress": "Progress",
     "accuraterip": "AccurateRip"
   },
-  "runtime": {
-    "title": "Runtime",
-    "binaryPath": "Binary path",
-    "workingDirectory": "Working directory"
-  },
-  "button": {
-    "scan": "Scan disc",
-    "openDrive": "Open drive",
-    "verifyBinary": "Verify binary",
-    "commandPreview": "Command preview",
-    "startRip": "Start rip",
-    "stop": "Stop"
-  },
   "ripping": {
     "title": "Ripping",
-    "offset": "Offset (-s)",
-    "devicePath": "Device path (-d)",
-    "maxRetries": "Max retries (-r)",
-    "checksumRetries": "Checksum retries (-Z)",
-    "speed": "Speed (-S)",
-    "paranoia": "Paranoia (-P)",
-    "pregapRules": "Pregap rules (-p)",
-    "overread": "Overread (-O)",
-    "hdcd": "HDCD decode (-H)",
-    "forceDeemphasis": "Force deemphasis (-E)",
-    "disableDeemphasis": "Disable deemphasis (-W)",
-    "disableReplayGain": "Disable ReplayGain (-K)",
-    "findDriveOffset": "Find drive offset (-f)"
+    "offsetMode": "Drive offset",
+    "deviceMode": "Device",
+    "maxRetries": "Max retries",
+    "checksumRetries": "Checksum retries",
+    "speed": "Speed",
+    "paranoia": "Paranoia",
+    "pregapRules": "Pregap rules",
+    "overread": "Overread",
+    "hdcd": "HDCD decode",
+    "deemphasis": "Deemphasis",
+    "findDriveOffset": "Find drive offset"
+  },
+  "mode": {
+    "auto": "Auto",
+    "manual": "Manual",
+    "select": "Select",
+    "path": "Path",
+    "on": "On",
+    "off": "Off",
+    "max": "Max",
+    "numeric": "Numeric",
+    "none": "None",
+    "force": "Force",
+    "disable": "Disable"
   },
   "output": {
     "title": "Output",
-    "note": "Select formats and naming. Default profile is tuned for safe FLAC rips.",
-    "bitrate": "Bitrate kbps (-b)",
-    "sanitation": "Sanitation (-T)",
-    "directoryScheme": "Directory scheme (-D)",
-    "trackScheme": "Track scheme (-F)",
-    "logScheme": "Log scheme (-L)",
-    "cueScheme": "CUE scheme (-M)",
-    "trackSelection": "Track selection (-l)"
+    "note": "Select formats and naming.",
+    "baseDirectory": "Output base directory",
+    "useWorkdir": "Use settings directory",
+    "useManualDir": "Manual directory",
+    "bitrate": "Bitrate kbps",
+    "sanitation": "Sanitation",
+    "directoryScheme": "Directory scheme",
+    "trackScheme": "Track scheme",
+    "logScheme": "Log scheme",
+    "cueScheme": "CUE scheme",
+    "schemeMode": "Scheme mode",
+    "schemeTabsHint": "Choose one tab to edit that scheme.",
+    "schemeComposerNote": "Choose building blocks to define how names should look.",
+    "schemeDropHint": "Drag blocks to build the active pattern.",
+    "schemeEmpty": "No blocks yet."
   },
   "metadata": {
     "title": "Metadata and misc",
-    "infoOnly": "Info only (-I)",
-    "disableMb": "Disable MusicBrainz (-N)",
-    "disableAccurateRip": "Disable AccurateRip (-A)",
-    "disableCoverArtDb": "Disable Cover Art DB (-U)",
-    "disableEmbedding": "Disable embedding (-G)",
-    "eject": "Eject after success (-Q)",
-    "printVersion": "Print version (-V)",
-    "showHelp": "Show help (-h)",
-    "albumMetadata": "Album metadata (-a)",
-    "trackMetadata": "Track metadata (-t)",
-    "release": "Release (-R)",
-    "disc": "Disc (-c)",
-    "totalDiscs": "Total discs (-c)",
-    "coverArt": "Cover art (-C)",
-    "coverArtSize": "Cover art max size (-m)"
+    "enableMb": "Enable MusicBrainz",
+    "enableAccurateRip": "Enable AccurateRip",
+    "enableCoverArtDb": "Enable Cover Art DB",
+    "enableEmbedding": "Enable embedding",
+    "enableReplayGain": "Enable ReplayGain",
+    "eject": "Eject after success",
+    "infoOnly": "Info only",
+    "release": "Release",
+    "disc": "Disc",
+    "totalDiscs": "Total discs",
+    "coverArt": "Cover art",
+    "coverArtSize": "Cover art max size"
   },
-  "log": {
-    "title": "Live log"
+  "advanced": {
+    "title": "Advanced",
+    "command": "Command preview",
+    "scanCommand": "Scan command",
+    "ripCommand": "Rip command",
+    "log": "Live log",
+    "copyLog": "Copy log",
+    "downloadLog": "Download log",
+    "logCopied": "Log copied to clipboard.",
+    "logDownloaded": "Log download started.",
+    "logCopyFailed": "Could not copy log.",
+    "logEmpty": "Log is empty."
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close settings",
+    "language": "Language",
+    "binaryPath": "Binary path",
+    "workingDirectory": "Working directory",
+    "checkBinary": "Check binary",
+    "save": "Save",
+    "binaryUnknown": "Binary status unknown.",
+    "binaryOk": "Binary available",
+    "binaryMissing": "Binary unavailable",
+    "binaryVersion": "Version",
+    "binaryError": "Error"
+  },
+  "button": {
+    "refreshDrives": "Refresh drives",
+    "refresh": "Refresh",
+    "browseDirectory": "Browse",
+    "addLiteral": "Add text",
+    "clearScheme": "Clear",
+    "remove": "Remove"
+  },
+  "schemeToken": {
+    "album": "Album",
+    "albumArtist": "Album artist",
+    "date": "Year / date",
+    "disc": "Disc number",
+    "track": "Track number",
+    "title": "Track title",
+    "artist": "Track artist",
+    "format": "Audio format"
+  },
+  "directoryPicker": {
+    "title": "Select directory",
+    "close": "Close directory picker",
+    "up": "Up",
+    "home": "Home",
+    "project": "Project",
+    "cancel": "Cancel",
+    "select": "Use this directory",
+    "empty": "No subdirectories found."
+  },
+  "drive": {
+    "noneFound": "No drives detected"
   },
   "trackStatus": {
     "detected": "Detected",
@@ -129,33 +229,60 @@
     "error": "Error"
   },
   "hint": {
-    "binaryPath": "Path to the cyanrip binary. Expert note: this is the executable path, not a cyanrip flag.",
-    "workingDirectory": "Default is ./output. cyanrip creates album folders there. Expert note: this is process CWD, not a cyanrip flag.",
-    "offset": "Drive offset in samples. Beginners should usually leave this at 0.",
-    "devicePath": "Optional drive path such as /dev/sr0.",
-    "maxRetries": "Frame retries for read errors. Higher values can help with difficult discs.",
-    "checksumRetries": "Repeats ripping until checksums match this many times.",
-    "paranoia": "Use none, max or a number. For secure rips, max is usually recommended.",
-    "pregapRules": "One rule per line: track=default|drop|merge|track.",
-    "sanitation": "Filename sanitation mode. unicode is a good default; simple replaces problematic symbols with _.",
-    "trackSelection": "CSV like 1,2,5. Leave empty to rip all tracks.",
-    "albumMetadata": "Use key=value pairs separated by : for album metadata.",
-    "trackMetadata": "One line per track: track=key=value:key=value.",
-    "coverArt": "One line per entry: destination=path_or_url, or just path_or_url."
+    "settingsLanguage": "Sets the interface language for all labels, hints, and status texts. This changes only the WebUI and does not affect file metadata. App default is English (en). The value is stored globally in settings.",
+    "settingsBinaryPath": "Defines which cyanrip executable is used for scan and rip actions. The app stores this as a global runtime setting and uses it for all command previews. Default is ./bin/cyanrip. If this path is wrong, scan and rip cannot start.",
+    "settingsWorkingDirectory": "Global base directory for this installation of the WebUI. It is used when output mode is set to 'Use settings directory' and as fallback for operations that need a working path. Default is ./output. You can still override output per run in the Output section.",
+    "settingsBinaryProbe": "Runs cyanrip with -V to verify that the binary is reachable and executable. The result also shows the detected version so you can confirm which build is active. This check does not start a scan or rip. It only validates runtime availability.",
+    "discAlbum": "Manual album title override for this disc session. Only fields you actually changed are sent to cyanrip via --album-metadata, so unchanged scan metadata stays untouched. Use this when database metadata is missing or incorrect. Edited fields are highlighted in the UI.",
+    "discArtist": "Manual album artist override for this disc session. The app compares your value against the scanned original and sends only real changes via --album-metadata. This helps avoid accidental metadata drift. Useful for compilations or incorrect artist merges.",
+    "discDate": "Manual release date/year override for this disc session. Only changed values are passed to cyanrip via --album-metadata. If left unchanged, scanned metadata is used. This is helpful when MusicBrainz data is incomplete.",
+    "offsetMode": "Drive offset compensates read-position differences between optical drives. Auto mode asks cyanrip to find the offset itself (-f). Manual mode sends an explicit value (-s <offset>) that you provide. Known offsets are listed by AccurateRip: https://www.accuraterip.com/driveoffsets.htm",
+    "deviceMode": "Controls how the optical drive is chosen. Auto sends no -d and leaves drive selection to cyanrip and the OS; Select uses a detected drive from the list; Path sends an explicit device path with -d. The Refresh button updates the detected drive list. Eject uses the same resolved path logic to stay consistent.",
+    "refreshDrives": "Refreshes the list of detected optical drives for Select mode. This is useful after plugging in USB drives or after permission changes. It does not start scanning. Saved per-drive offsets remain linked by drive ID.",
+    "maxRetries": "Maximum low-level read retries per frame (-r). Higher values can recover more difficult discs but increase rip time. App default is 10. For clean discs, lower values are usually faster without quality loss.",
+    "checksumRetries": "How often cyanrip should rerun the full rip until checksums match (-Z). This is a safety mechanism for unstable reads on problematic media. Leaving it unset keeps cyanrip's own default behavior. Higher values improve confidence but can take much longer.",
+    "speed": "Requested drive read speed (-S). Lower speed can reduce read errors on scratched or unstable discs. Leaving this empty lets cyanrip and the drive firmware negotiate speed automatically. This option affects rip time and sometimes stability.",
+    "paranoia": "Paranoia controls the strictness of read verification (-P). 'max' is safest for problematic discs, 'none' is fastest with minimal extra checks, and numeric values allow fine tuning. If you choose Numeric, enter a non-negative integer. App default is max.",
+    "pregapRules": "Pregap rules define how index-0/pregap audio is handled per track (-p). Format is one rule per line: track=default|drop|merge|track. Use this when a disc has unusual hidden pregap content. If unsure, leave empty to keep cyanrip defaults.",
+    "overread": "Overread tries to read into lead-in and lead-out areas when supported by your drive (--overread-leadinout). This can help preserve edge samples on some discs. Not all drives support it reliably. Default is off.",
+    "hdcd": "HDCD decode converts HDCD-encoded audio to properly decoded PCM during extraction (--decode-hdcd). Enable only if the disc is actually HDCD encoded. For normal CDs, this has no practical benefit. Default is off.",
+    "deemphasis": "Some early CDs were mastered with pre-emphasis and need de-emphasis for correct playback tone. Auto lets cyanrip decide from disc flags; Force always applies de-emphasis; Disable never applies it. CLI mapping: --force-deemphasis or --disable-deemphasis. For unknown discs, Auto is usually safest.",
+    "bitrate": "Target bitrate for lossy output formats (-b), for example MP3/Ogg/Opus encoding paths. It does not affect lossless formats like FLAC. Higher bitrate improves quality at larger file size. Default is 256.",
+    "sanitation": "Filename sanitation mode (-T) controls how unsafe or locale-specific characters are normalized in output names. This can improve cross-platform compatibility when moving files between systems. Default is unicode. Use stricter modes only if your environment requires it.",
+    "directoryScheme": "Pattern for album directory names (-D). In Auto mode no CLI parameter is passed and cyanrip defaults apply. In Manual mode this pattern is sent explicitly. Tokens in the composer represent metadata parts such as album, artist, disc, or format.",
+    "trackScheme": "Pattern for track filenames (-F). Auto mode uses cyanrip defaults with no explicit CLI override. Manual mode sends your composed pattern. This controls how track numbers, titles, and artist parts appear in filenames.",
+    "logScheme": "Pattern for rip log filenames (-L). Auto mode keeps cyanrip's own naming behavior. Manual mode sends an explicit log naming pattern. Useful when you want predictable naming for archive workflows.",
+    "cueScheme": "Pattern for CUE filenames (-M). Auto mode keeps cyanrip defaults; Manual mode sends your custom pattern. Use this if you need consistent CUE naming across multi-disc collections. Leave Auto if you do not need custom naming.",
+    "schemeMode": "Select Auto or Manual separately for each scheme tab (Directory, Track, Log, CUE). Auto means no CLI scheme parameter is sent, so cyanrip defaults are used. Manual enables the composer for that scheme and sends the resulting pattern. This keeps default behavior safe while allowing explicit customization only where needed.",
+    "schemeComposer": "Adds a literal text fragment to the currently selected scheme. You can also drag predefined blocks, reorder them, and remove them visually. The composed order is mirrored into the underlying scheme field. Only Manual scheme mode sends this to cyanrip.",
+    "baseDirectory": "Determines where ripped files are written. 'Use settings directory' uses the global working directory from Settings. 'Manual directory' lets you choose a run-specific path via the server-side directory picker. This choice only affects output location, not metadata.",
+    "enableMb": "MusicBrainz provides album and track metadata lookups. If enabled, cyanrip can fill tags automatically when matches exist. If disabled, the app sends --disable-mb and you rely on manual metadata edits. Default in app and cyanrip is enabled.",
+    "enableAccurateRip": "AccurateRip compares your extracted checksums against a public verification database. Higher confidence values indicate more matching submissions and typically higher trust in rip accuracy. If disabled, the app sends --disable-accurip. Default is enabled.",
+    "enableCoverArtDb": "Allows querying online cover art databases for artwork metadata integration. If disabled, the app sends --disable-coverart-db and only manual cover art sources are used. This setting does not remove already provided local art files. Default is enabled.",
+    "enableEmbedding": "Embeds cover art images into output audio files where supported. If disabled, the app sends --disable-coverart-embedding and keeps files without embedded art. This can reduce file size or speed up encoding on large artwork. Default is enabled.",
+    "enableReplayGain": "ReplayGain analyzes loudness and writes normalization metadata for consistent playback volume. If disabled, the app sends --disable-replaygain and skips this analysis. Disabling may speed up processing slightly. Default is enabled.",
+    "ejectOnSuccess": "Automatically ejects the drive after a successful rip (--eject-on-success). Useful for batch workflows where physical media is swapped often. Disabled by default. No effect when rip fails.",
+    "infoOnly": "Runs cyanrip in information mode without full ripping (--print-info-only). This is mainly useful for scan-like diagnostics and metadata checks. For normal ripping, keep it disabled. The UI scan action already handles info-oriented behavior automatically.",
+    "release": "Optional release identifier/label passed with -R. Use this when you need to disambiguate versions such as remasters or reissues. If empty, no release override is sent. Treated as disc-session metadata.",
+    "discNumber": "Disc number for multi-disc sets (-c). Set this when ripping box sets or albums split across several discs. If total discs is also set, cyanrip receives disc/total. If left empty, no disc flag is sent.",
+    "totalDiscs": "Total disc count in a multi-disc release (-c as disc/total). This helps generate consistent tags and naming for complete sets. Requires Disc number to be set. Leave empty for single-disc releases.",
+    "coverArt": "Manual cover art mapping for cyanrip (-C). Use one line per entry: destination=path_or_url, or only path_or_url for default placement. This is useful for custom front/back images or per-track art. Leave empty to skip manual cover mapping.",
+    "coverArtSize": "Maximum size for cover art lookup results (-m). Larger values may return higher-resolution images but increase bandwidth and processing time. Default is -1 (no explicit cap from the app). This option affects lookup behavior, not local image files."
   },
   "placeholder": {
     "paranoia": "max | none | 0..n",
     "pregapRules": "2=merge\n7=track",
-    "trackSelection": "1,2,3",
-    "albumMetadata": "album=Name:album_artist=Artist:date=2026",
-    "trackMetadata": "1=title=Intro:artist=Band\n2=title=Main Song",
-    "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg"
+    "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg",
+    "schemeLiteral": "Literal text fragment"
   },
   "message": {
-    "probingBinary": "Checking binary...",
-    "ejectingDrive": "Opening drive...",
-    "ejectDone": "Drive opened.",
-    "noOutput": "<no output>"
+    "settingsSaved": "Settings saved.",
+    "backToScan": "Returned to scan phase.",
+    "scanDone": "Scan completed.",
+    "scanStopped": "Scan stopped.",
+    "ripStarted": "Rip started.",
+    "ripStopped": "Rip stopped.",
+    "ejectDone": "Drive opened."
   },
   "error": {
     "trackLabel": "Track number",
@@ -164,8 +291,10 @@
     "float": "Invalid numeric value: {value}",
     "pregapFormat": "Pregap rule at line {line} must use track=action.",
     "pregapActionMissing": "Pregap action is missing at line {line}.",
-    "trackMetadataFormat": "Track metadata at line {line} must use track=metadata.",
-    "coverArtFormat": "Cover art line {line} must be destination=source.",
-    "coverArtIncomplete": "Cover art line {line} is incomplete."
+    "coverArtIncomplete": "Cover art line {line} is incomplete.",
+    "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
+    "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
+    "scanRequired": "Scan the disc first to start ripping.",
+    "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first."
   }
 }

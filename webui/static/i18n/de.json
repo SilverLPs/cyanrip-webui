@@ -7,10 +7,9 @@
   },
   "hero": {
     "eyebrow": "Akkurate Audio-CD-Extraktion",
-    "subtitle": "Grafische Oberfläche für cyanrip mit umfassenden Konfigurationsoptionen."
+    "subtitle": "Integrierter Rip-Workflow für cyanrip. CD scannen, Metadaten prüfen, dann zuverlässig rippen."
   },
   "toolbar": {
-    "language": "Sprache",
     "theme": {
       "auto": "Theme: Auto ({resolved})",
       "fixed": "Theme: {mode}",
@@ -23,6 +22,10 @@
     "animations": {
       "on": "Animationen: An",
       "off": "Animationen: Aus"
+    },
+    "workspace": {
+      "phaseAdaptive": "Layout-Modus: Fokus nach Phase (Klick zeigt alle Optionen)",
+      "showAll": "Layout-Modus: Alle Optionen sichtbar (Klick fokussiert nach Phase)"
     }
   },
   "status": {
@@ -30,23 +33,63 @@
     "idle": "Bereit",
     "scanning": "Scannen",
     "scanned": "Gescannt",
+    "scanRequired": "Neuer Scan nötig",
     "ripping": "Rippen",
     "ripped": "Gerippt",
     "failed": "Fehlgeschlagen",
     "stopped": "Gestoppt",
     "tracks": "Tracks: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scannen"
+    "etaScanning": "Scannen",
+    "session": "Session: {id}"
+  },
+  "session": {
+    "title": "Session"
+  },
+  "action": {
+    "scan": "CD scannen",
+    "start": "Rip starten",
+    "stop": "Aktuelle Aktion stoppen",
+    "eject": "Laufwerk öffnen",
+    "backToScan": "Zurück zur Scan-Phase",
+    "infoOnlyOn": "Nur Infos: aktiviert",
+    "infoOnlyOff": "Nur Infos: deaktiviert",
+    "advanced": "Erweitert anzeigen",
+    "advancedHide": "Erweitert ausblenden"
+  },
+  "workflow": {
+    "phaseLine": "Phase: {phase}",
+    "phase": {
+      "preScan": "Scan-Vorbereitung",
+      "postScan": "Prüfen und einstellen",
+      "ripping": "Rippen läuft",
+      "postRip": "Rip-Ergebnisse"
+    },
+    "step": {
+      "preScan": "1. CD scannen",
+      "postScan": "2. Prüfen und anpassen",
+      "postRip": "3. Rip-Ergebnisse"
+    }
+  },
+  "workspace": {
+    "relevant": "Relevante Optionen anzeigen",
+    "showAll": "Alle Optionen anzeigen"
   },
   "disc": {
     "title": "Disc",
     "empty": "Noch keine CD gescannt.",
+    "meta": {
+      "album": "Album",
+      "artist": "Album-Artist",
+      "date": "Datum"
+    },
     "summary": {
       "album": "Album",
       "artist": "Artist",
       "tracks": "Tracks",
       "totalTime": "Gesamtzeit",
-      "accuraterip": "AccurateRip DB"
+      "accuraterip": "AccurateRip DB",
+      "maxConfidence": "max confidence: {value}"
     },
     "unknownAlbum": "Unbekanntes Album",
     "unknownArtist": "Unbekannter Artist"
@@ -60,66 +103,123 @@
     "progress": "Fortschritt",
     "accuraterip": "AccurateRip"
   },
-  "runtime": {
-    "title": "Runtime",
-    "binaryPath": "Binary-Pfad",
-    "workingDirectory": "Arbeitsverzeichnis"
-  },
-  "button": {
-    "scan": "CD scannen",
-    "openDrive": "Laufwerk öffnen",
-    "verifyBinary": "Binary prüfen",
-    "commandPreview": "Command-Preview",
-    "startRip": "Rip starten",
-    "stop": "Stop"
-  },
   "ripping": {
     "title": "Ripping",
-    "offset": "Offset (-s)",
-    "devicePath": "Gerätepfad (-d)",
-    "maxRetries": "Max retries (-r)",
-    "checksumRetries": "Checksum retries (-Z)",
-    "speed": "Speed (-S)",
-    "paranoia": "Paranoia (-P)",
-    "pregapRules": "Pregap-Regeln (-p)",
-    "overread": "Overread (-O)",
-    "hdcd": "HDCD decodieren (-H)",
-    "forceDeemphasis": "Deemphasis erzwingen (-E)",
-    "disableDeemphasis": "Deemphasis deaktivieren (-W)",
-    "disableReplayGain": "ReplayGain deaktivieren (-K)",
-    "findDriveOffset": "Drive-Offset suchen (-f)"
+    "offsetMode": "Drive-Offset",
+    "deviceMode": "Laufwerk",
+    "maxRetries": "Max retries",
+    "checksumRetries": "Checksum retries",
+    "speed": "Speed",
+    "paranoia": "Paranoia",
+    "pregapRules": "Pregap-Regeln",
+    "overread": "Overread",
+    "hdcd": "HDCD decodieren",
+    "deemphasis": "Deemphasis",
+    "findDriveOffset": "Drive-Offset suchen"
+  },
+  "mode": {
+    "auto": "Auto",
+    "manual": "Manuell",
+    "select": "Auswahl",
+    "path": "Pfad",
+    "on": "An",
+    "off": "Aus",
+    "max": "Max",
+    "numeric": "Numerisch",
+    "none": "Keine",
+    "force": "Erzwingen",
+    "disable": "Deaktivieren"
   },
   "output": {
     "title": "Output",
-    "note": "Formate und Benennung wählen. Das Default-Profil ist auf sichere FLAC-Rips ausgelegt.",
-    "bitrate": "Bitrate kbps (-b)",
-    "sanitation": "Sanitation (-T)",
-    "directoryScheme": "Directory-Schema (-D)",
-    "trackScheme": "Track-Schema (-F)",
-    "logScheme": "Log-Schema (-L)",
-    "cueScheme": "CUE-Schema (-M)",
-    "trackSelection": "Track-Auswahl (-l)"
+    "note": "Formate und Benennung wählen.",
+    "baseDirectory": "Output-Basisverzeichnis",
+    "useWorkdir": "Settings-Verzeichnis nutzen",
+    "useManualDir": "Manuelles Verzeichnis",
+    "bitrate": "Bitrate kbps",
+    "sanitation": "Sanitation",
+    "directoryScheme": "Directory-Schema",
+    "trackScheme": "Track-Schema",
+    "logScheme": "Log-Schema",
+    "cueScheme": "CUE-Schema",
+    "schemeMode": "Schema-Modus",
+    "schemeTabsHint": "Wähle einen Tab, um genau dieses Schema zu bearbeiten.",
+    "schemeComposerNote": "Wähle Bausteine, um das gewünschte Namensmuster festzulegen.",
+    "schemeDropHint": "Blöcke ziehen, um das aktive Muster aufzubauen.",
+    "schemeEmpty": "Noch keine Bausteine."
   },
   "metadata": {
     "title": "Metadaten und Sonstiges",
-    "infoOnly": "Nur Infos (-I)",
-    "disableMb": "MusicBrainz deaktivieren (-N)",
-    "disableAccurateRip": "AccurateRip deaktivieren (-A)",
-    "disableCoverArtDb": "Cover-Art-DB deaktivieren (-U)",
-    "disableEmbedding": "Embedding deaktivieren (-G)",
-    "eject": "Nach Erfolg auswerfen (-Q)",
-    "printVersion": "Version anzeigen (-V)",
-    "showHelp": "Hilfe anzeigen (-h)",
-    "albumMetadata": "Album-Metadaten (-a)",
-    "trackMetadata": "Track-Metadaten (-t)",
-    "release": "Release (-R)",
-    "disc": "Disc (-c)",
-    "totalDiscs": "Anzahl Discs (-c)",
-    "coverArt": "Cover-Art (-C)",
-    "coverArtSize": "Cover-Art Max-Größe (-m)"
+    "enableMb": "MusicBrainz aktivieren",
+    "enableAccurateRip": "AccurateRip aktivieren",
+    "enableCoverArtDb": "Cover-Art-DB aktivieren",
+    "enableEmbedding": "Embedding aktivieren",
+    "enableReplayGain": "ReplayGain aktivieren",
+    "eject": "Nach Erfolg auswerfen",
+    "infoOnly": "Nur Infos",
+    "release": "Release",
+    "disc": "Disc",
+    "totalDiscs": "Anzahl Discs",
+    "coverArt": "Cover-Art",
+    "coverArtSize": "Cover-Art Max-Größe"
   },
-  "log": {
-    "title": "Live-Log"
+  "advanced": {
+    "title": "Erweitert",
+    "command": "Command-Preview",
+    "scanCommand": "Scan-Command",
+    "ripCommand": "Rip-Command",
+    "log": "Live-Log",
+    "copyLog": "Log kopieren",
+    "downloadLog": "Log herunterladen",
+    "logCopied": "Log in die Zwischenablage kopiert.",
+    "logDownloaded": "Log-Download gestartet.",
+    "logCopyFailed": "Log konnte nicht kopiert werden.",
+    "logEmpty": "Log ist leer."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "close": "Einstellungen schließen",
+    "language": "Sprache",
+    "binaryPath": "Binary-Pfad",
+    "workingDirectory": "Arbeitsverzeichnis",
+    "checkBinary": "Binary prüfen",
+    "save": "Speichern",
+    "binaryUnknown": "Binary-Status unbekannt.",
+    "binaryOk": "Binary verfügbar",
+    "binaryMissing": "Binary nicht verfügbar",
+    "binaryVersion": "Version",
+    "binaryError": "Fehler"
+  },
+  "button": {
+    "refreshDrives": "Laufwerke aktualisieren",
+    "refresh": "Aktualisieren",
+    "browseDirectory": "Durchsuchen",
+    "addLiteral": "Text hinzufügen",
+    "clearScheme": "Leeren",
+    "remove": "Entfernen"
+  },
+  "schemeToken": {
+    "album": "Album",
+    "albumArtist": "Album-Artist",
+    "date": "Jahr / Datum",
+    "disc": "Disc-Nummer",
+    "track": "Track-Nummer",
+    "title": "Track-Titel",
+    "artist": "Track-Artist",
+    "format": "Audio-Format"
+  },
+  "directoryPicker": {
+    "title": "Verzeichnis auswählen",
+    "close": "Verzeichnisdialog schließen",
+    "up": "Hoch",
+    "home": "Home",
+    "project": "Projekt",
+    "cancel": "Abbrechen",
+    "select": "Dieses Verzeichnis verwenden",
+    "empty": "Keine Unterverzeichnisse gefunden."
+  },
+  "drive": {
+    "noneFound": "Keine Laufwerke gefunden"
   },
   "trackStatus": {
     "detected": "Erkannt",
@@ -129,33 +229,60 @@
     "error": "Fehler"
   },
   "hint": {
-    "binaryPath": "Pfad zur cyanrip-Binary. Expertennotiz: Das ist der Executable-Pfad, kein cyanrip-Flag.",
-    "workingDirectory": "Default ist ./output. Dort erstellt cyanrip seine Album-Ordner. Expertennotiz: Das ist das Prozess-CWD, kein cyanrip-Flag.",
-    "offset": "Drive-Offset in Samples. Für Einsteiger meist auf 0 lassen.",
-    "devicePath": "Optionaler Laufwerkspfad wie /dev/sr0.",
-    "maxRetries": "Frame-Retries bei Lesefehlern. Höhere Werte helfen bei schwierigen CDs.",
-    "checksumRetries": "Wiederholt das Rippen, bis Checksummen so oft übereinstimmen.",
-    "paranoia": "none, max oder eine Zahl. Für sichere Rips ist max meist sinnvoll.",
-    "pregapRules": "Eine Regel pro Zeile: track=default|drop|merge|track.",
-    "sanitation": "Dateinamensanitisierung. unicode ist guter Default; simple ersetzt kritische Zeichen mit _.",
-    "trackSelection": "CSV wie 1,2,5. Leer bedeutet: alle Tracks.",
-    "albumMetadata": "Album-Metadaten als key=value Paare, getrennt durch :",
-    "trackMetadata": "Eine Zeile pro Track: track=key=value:key=value.",
-    "coverArt": "Eine Zeile pro Eintrag: destination=path_or_url oder nur path_or_url."
+    "settingsLanguage": "Legt die Sprache der Oberfläche für Labels, Hinweise und Statusmeldungen fest. Diese Einstellung betrifft nur die WebUI und nicht die Audio-Metadaten. Standard ist Englisch (en). Der Wert wird global in den Einstellungen gespeichert.",
+    "settingsBinaryPath": "Hier definierst du, welche cyanrip-Binary für Scan und Rip verwendet wird. Die App nutzt diesen Pfad auch für die Command-Preview. Standard ist ./bin/cyanrip. Ist der Pfad falsch, können Scan und Rip nicht starten.",
+    "settingsWorkingDirectory": "Globales Basis-Arbeitsverzeichnis dieser WebUI-Instanz. Es wird genutzt, wenn beim Output 'Settings-Verzeichnis nutzen' aktiv ist, und als Fallback für Aktionen mit Pfadangabe. Standard ist ./output. Für einzelne Runs kannst du den Output trotzdem manuell überschreiben.",
+    "settingsBinaryProbe": "Startet cyanrip mit -V, um Erreichbarkeit und Ausführbarkeit der Binary zu prüfen. Zusätzlich wird die erkannte Version angezeigt. Dieser Check startet keinen Scan und keinen Rip. Er dient nur der Laufzeitprüfung.",
+    "discAlbum": "Manuelle Album-Überschreibung für die aktuelle Disc-Session. Die App übergibt nur echte Änderungen via --album-metadata, unveränderte Scanwerte bleiben erhalten. So vermeidest du unnötige oder falsche Overrides. Geänderte Felder werden visuell markiert.",
+    "discArtist": "Manuelle Album-Artist-Überschreibung für die aktuelle Disc-Session. Nur geänderte Werte werden via --album-metadata an cyanrip geschickt. Das reduziert das Risiko unbeabsichtigter Tag-Änderungen. Nützlich bei fehlerhaften Datenbanktreffern oder Samplern.",
+    "discDate": "Manuelle Datums-/Jahres-Überschreibung für diese Disc. Die App sendet nur Änderungen via --album-metadata. Ohne Änderung bleibt der gescannte Wert aktiv. Hilfreich, wenn MusicBrainz unvollständig ist.",
+    "offsetMode": "Der Drive-Offset korrigiert laufwerksbedingte Leseverschiebungen. Auto lässt cyanrip den Offset selbst ermitteln (-f). Manuell sendet einen festen Wert (-s <offset>) aus deinem Eingabefeld. Bekannte Werte findest du bei AccurateRip: https://www.accuraterip.com/driveoffsets.htm",
+    "deviceMode": "Steuert, wie das Laufwerk gewählt wird. Auto sendet kein -d und überlässt die Auswahl cyanrip/OS; Auswahl nutzt ein erkanntes Laufwerk aus der Liste; Pfad sendet einen festen Gerätepfad per -d. Der Refresh-Button aktualisiert die Laufwerksliste. Auch Eject nutzt dieselbe Auflösungslogik für konsistentes Verhalten.",
+    "refreshDrives": "Liest erkannte optische Laufwerke für den Auswahl-Modus neu ein. Nützlich nach USB-Hotplug oder Berechtigungsänderungen. Startet keinen Scan. Gespeicherte Offsets bleiben über Laufwerks-ID verknüpft.",
+    "maxRetries": "Maximale Lesewiederholungen pro Frame (-r). Höhere Werte können problematische Discs besser retten, dauern aber länger. App-Standard ist 10. Bei sauberen Discs sind niedrigere Werte oft schneller.",
+    "checksumRetries": "Wie oft cyanrip den kompletten Rip wiederholt, bis Checksummen übereinstimmen (-Z). Das erhöht die Sicherheit bei instabilen Lesungen. Leer lassen bedeutet: cyanrip-Standardverhalten. Höhere Werte kosten deutlich mehr Zeit.",
+    "speed": "Gewünschte Laufwerksgeschwindigkeit (-S). Niedrigere Geschwindigkeit kann bei beschädigten Discs stabiler sein. Leer lassen überlässt die Wahl cyanrip und der Laufwerks-Firmware. Diese Option beeinflusst Dauer und teils auch Fehlerrate.",
+    "paranoia": "Paranoia steuert die Strenge der Leseverifikation (-P). 'max' ist am sichersten für schwierige Discs, 'none' ist am schnellsten mit minimalen Zusatzprüfungen, numerisch erlaubt Feintuning. Im numerischen Modus muss ein nicht-negativer Ganzzahlwert gesetzt sein. Standard ist max.",
+    "pregapRules": "Pregap-Regeln bestimmen die Behandlung von Index-0-/Pregap-Audio pro Track (-p). Format: eine Regel pro Zeile als track=default|drop|merge|track. Sinnvoll bei Discs mit ungewöhnlichen Pregap-Strukturen. Wenn unsicher, leer lassen.",
+    "overread": "Overread versucht, in Lead-in/Lead-out-Bereiche zu lesen, sofern das Laufwerk es unterstützt (--overread-leadinout). Das kann Rand-Samples auf manchen Discs vollständiger erfassen. Nicht jedes Laufwerk unterstützt das stabil. Standard ist aus.",
+    "hdcd": "HDCD-Decode decodiert HDCD-codierte Inhalte während des Rips zu korrektem PCM (--decode-hdcd). Nur bei echten HDCD-Discs sinnvoll. Für normale CDs bringt es keinen Vorteil. Standard ist aus.",
+    "deemphasis": "Einige frühe CDs nutzen Pre-Emphasis und brauchen De-Emphasis für korrekte Klangbalance. Auto überlässt die Entscheidung cyanrip anhand Disc-Flags; Erzwingen aktiviert immer; Deaktivieren verhindert sie immer. CLI-Mapping: --force-deemphasis oder --disable-deemphasis. Bei unklaren Fällen ist Auto meist die sichere Wahl.",
+    "bitrate": "Ziel-Bitrate für verlustbehaftete Ausgabeformate (-b), z. B. MP3/Ogg/Opus. Auf verlustfreie Formate wie FLAC hat das keine Wirkung. Höhere Bitraten verbessern Qualität bei größeren Dateien. Standard ist 256.",
+    "sanitation": "Dateinamen-Sanitation (-T) normalisiert problematische oder systemspezifische Zeichen in Dateinamen. Das verbessert Kompatibilität zwischen unterschiedlichen Betriebssystemen. Standard ist unicode. Strengere Modi nur verwenden, wenn dein Zielsystem es verlangt.",
+    "directoryScheme": "Muster für Album-Verzeichnisnamen (-D). Im Auto-Modus wird kein CLI-Parameter gesendet und cyanrip-Defaults gelten. Im Manual-Modus sendet die App dein explizites Muster. Die Composer-Tokens repräsentieren Metadaten-Bausteine.",
+    "trackScheme": "Muster für Track-Dateinamen (-F). Auto verwendet cyanrip-Defaults ohne CLI-Override. Manual sendet dein gebautes Muster. Damit steuerst du z. B. Tracknummer, Titel und Artist im Dateinamen.",
+    "logScheme": "Muster für Log-Dateinamen (-L). Auto belässt die cyanrip-Standardbenennung. Manual sendet ein explizites Log-Muster. Praktisch für konsistente Archiv-Workflows.",
+    "cueScheme": "Muster für CUE-Dateinamen (-M). Auto nutzt cyanrip-Defaults; Manual sendet dein eigenes Muster. Sinnvoll für einheitliche Benennung in Multi-Disc-Sammlungen. Auto reicht, wenn keine Spezialbenennung nötig ist.",
+    "schemeMode": "Auto/Manual wird pro Schema-Tab separat gewählt (Directory, Track, Log, CUE). Auto bedeutet: kein CLI-Schema-Parameter, cyanrip-Defaults gelten. Manual aktiviert den Composer für genau dieses Schema und sendet das Ergebnis. So bleiben Defaults sicher, während du nur bei Bedarf explizit überschreibst.",
+    "schemeComposer": "Fügt ein wörtliches Textfragment zum aktiven Schema hinzu. Vordefinierte Blöcke können gezogen, umsortiert und entfernt werden. Die Reihenfolge im Composer wird direkt ins zugehörige Schemafeld übernommen. Nur im Manual-Modus wird dieses Schema an cyanrip übergeben.",
+    "baseDirectory": "Legt fest, wohin Rip-Dateien geschrieben werden. 'Settings-Verzeichnis nutzen' verwendet das globale Arbeitsverzeichnis aus den Einstellungen. 'Manuelles Verzeichnis' setzt einen Run-spezifischen Pfad über den serverseitigen Verzeichnisdialog. Diese Wahl beeinflusst nur den Zielpfad, nicht die Metadaten.",
+    "enableMb": "MusicBrainz liefert Album-/Track-Metadaten aus einer Online-Datenbank. Aktiviert kann cyanrip passende Tags automatisch füllen. Deaktiviert sendet die App --disable-mb und du arbeitest stärker manuell. Standard in App und cyanrip ist aktiviert.",
+    "enableAccurateRip": "AccurateRip vergleicht extrahierte Checksummen mit einer öffentlichen Referenzdatenbank. Höhere Confidence-Werte bedeuten mehr übereinstimmende Einsendungen und meist höhere Verlässlichkeit. Deaktiviert sendet --disable-accurip. Standard ist aktiviert.",
+    "enableCoverArtDb": "Erlaubt die Abfrage externer Cover-Art-Datenbanken. Deaktiviert sendet die App --disable-coverart-db, dann werden nur manuelle Quellen genutzt. Bereits angegebene lokale Cover-Dateien werden dadurch nicht entfernt. Standard ist aktiviert.",
+    "enableEmbedding": "Betten Cover-Bilder in Ausgabedateien ein, sofern Format und Toolchain das unterstützen. Deaktiviert sendet --disable-coverart-embedding und lässt die Dateien ohne eingebettetes Cover. Das kann Dateigröße und Laufzeit reduzieren. Standard ist aktiviert.",
+    "enableReplayGain": "ReplayGain analysiert Lautheit und schreibt Normalisierungs-Metadaten für gleichmäßigere Wiedergabe. Deaktiviert sendet --disable-replaygain und überspringt diese Analyse. Das kann den Run etwas beschleunigen. Standard ist aktiviert.",
+    "ejectOnSuccess": "Wirft das Laufwerk nach erfolgreichem Rip automatisch aus (--eject-on-success). Praktisch für Stapelbetrieb mit häufigem Disc-Wechsel. Standard ist aus. Bei Fehlern wird nicht ausgeworfen.",
+    "infoOnly": "Führt cyanrip im Informationsmodus ohne vollständigen Rip aus (--print-info-only). Das ist vor allem für Diagnose/Scan-ähnliche Abläufe sinnvoll. Für normale Rips sollte es deaktiviert bleiben. Die Scan-Aktion der UI nutzt intern bereits passende Info-Strategien.",
+    "release": "Optionales Release-/Versionsfeld für -R. Hilfreich zur Unterscheidung von Remaster, Reissue oder verschiedenen Editionen. Leer bedeutet: kein expliziter Release-Override. Gehört zu den Disc-spezifischen Metadaten.",
+    "discNumber": "Disc-Nummer in Multi-Disc-Sets (-c). Für Boxsets oder Alben mit mehreren CDs relevant. Wenn auch Total discs gesetzt ist, sendet cyanrip disc/total. Ohne Wert wird kein Disc-Flag gesendet.",
+    "totalDiscs": "Gesamtanzahl der Discs in einem Multi-Disc-Release (-c als disc/total). Unterstützt konsistente Tags und Dateibenennung über das gesamte Set. Benötigt eine gesetzte Disc-Nummer. Für Einzel-CDs leer lassen.",
+    "coverArt": "Manuelle Cover-Art-Zuordnung für cyanrip (-C). Eine Zeile pro Eintrag: destination=path_or_url oder nur path_or_url. Damit lassen sich Front/Back oder trackbezogene Bilder gezielt steuern. Leer bedeutet: keine manuelle Cover-Zuordnung.",
+    "coverArtSize": "Maximale Größe für Cover-Art-Lookups (-m). Größere Werte können höher aufgelöste Bilder liefern, kosten aber mehr Bandbreite und Zeit. Standard ist -1 (kein explizites App-Limit). Betrifft nur Lookup-Quellen, nicht lokale Dateien."
   },
   "placeholder": {
     "paranoia": "max | none | 0..n",
     "pregapRules": "2=merge\n7=track",
-    "trackSelection": "1,2,3",
-    "albumMetadata": "album=Name:album_artist=Artist:date=2026",
-    "trackMetadata": "1=title=Intro:artist=Band\n2=title=Main Song",
-    "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg"
+    "coverArts": "Front=/tmp/cover.jpg\n2=/tmp/track2.jpg",
+    "schemeLiteral": "Wörtliches Textfragment"
   },
   "message": {
-    "probingBinary": "Binary wird geprüft...",
-    "ejectingDrive": "Laufwerk wird geöffnet...",
-    "ejectDone": "Laufwerk geöffnet.",
-    "noOutput": "<keine Ausgabe>"
+    "settingsSaved": "Einstellungen gespeichert.",
+    "backToScan": "Zurück in die Scan-Phase gewechselt.",
+    "scanDone": "Scan abgeschlossen.",
+    "scanStopped": "Scan gestoppt.",
+    "ripStarted": "Rip gestartet.",
+    "ripStopped": "Rip gestoppt.",
+    "ejectDone": "Laufwerk geöffnet."
   },
   "error": {
     "trackLabel": "Tracknummer",
@@ -164,8 +291,10 @@
     "float": "Ungültiger numerischer Wert: {value}",
     "pregapFormat": "Pregap-Regel in Zeile {line} muss track=action sein.",
     "pregapActionMissing": "Pregap-Action fehlt in Zeile {line}.",
-    "trackMetadataFormat": "Track-Metadaten in Zeile {line} müssen track=metadata sein.",
-    "coverArtFormat": "Cover-Art-Zeile {line} muss destination=source sein.",
-    "coverArtIncomplete": "Cover-Art-Zeile {line} ist unvollständig."
+    "coverArtIncomplete": "Cover-Art-Zeile {line} ist unvollständig.",
+    "paranoiaRequired": "Im numerischen Paranoia-Modus muss ein nicht-negativer Ganzzahlwert gesetzt sein.",
+    "paranoiaInvalid": "Der numerische Paranoia-Wert muss eine nicht-negative Ganzzahl sein.",
+    "scanRequired": "Zum Rippen muss die Disc zuerst gescannt werden.",
+    "ejectAutoAmbiguous": "Automatisches Auswerfen ist bei mehreren Laufwerken nicht eindeutig. Bitte zuerst ein konkretes Laufwerk auswählen."
   }
 }

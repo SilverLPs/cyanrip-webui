@@ -8,19 +8,48 @@
   </head>
   <body>
     <header class="hero">
-      <div>
+      <div class="hero-main">
         <p class="eyebrow" data-i18n="hero.eyebrow">Accurate audio CD extraction</p>
         <h1>cyanrip-webui</h1>
-        <p class="subtitle" data-i18n="hero.subtitle">Graphical interface for cyanrip with comprehensive configuration options.</p>
+        <p class="subtitle" data-i18n="hero.subtitle">
+          Integrated rip workflow for cyanrip. Scan, review metadata, then rip with reliable session tracking.
+        </p>
       </div>
+
       <div class="hero-side">
-        <div class="toolbar">
-          <label class="mini-control" for="language-select">
-            <span data-i18n="toolbar.language">Language</span>
-            <select id="language-select"></select>
-          </label>
-          <button id="theme-toggle" class="toolbar-button" type="button">Theme: Auto</button>
-          <button id="animation-toggle" class="toolbar-button" type="button">Animations: On</button>
+        <div class="toolbar-row">
+          <div class="action-toolbar action-toolbar-disc" role="toolbar" aria-label="Disc actions">
+            <button id="action-primary" class="icon-button" type="button" data-i18n-title="action.scan" title="Scan disc">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 2a8 8 0 0 1 7.75 6H4.25A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.75-6h15.5A8 8 0 0 1 12 20Zm0-5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="currentColor"/></svg>
+            </button>
+            <button id="action-stop" class="icon-button" type="button" data-i18n-title="action.stop" title="Stop">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z" fill="currentColor"/></svg>
+            </button>
+            <button id="action-eject" class="icon-button" type="button" data-i18n-title="action.eject" title="Open drive">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 5 14h14L12 4Zm-8 12h16v4H4v-4Z" fill="currentColor"/></svg>
+            </button>
+            <button id="action-back-to-scan" class="icon-button" type="button" data-i18n-title="action.backToScan" title="Back to scan phase">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 3 12l8 7v-4h6a4 4 0 1 0 0-8h-6V5Zm0 4h6a2 2 0 1 1 0 4h-6V9Z" fill="currentColor"/></svg>
+            </button>
+          </div>
+
+          <div class="icon-toolbar" role="toolbar" aria-label="Global toolbar">
+            <button id="theme-toggle" class="icon-button" type="button" title="Theme">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v1.3a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1Zm0 14.7a1 1 0 0 1 1 1V20a1 1 0 1 1-2 0v-1.3a1 1 0 0 1 1-1Zm9-6.7a1 1 0 0 1 0 2h-1.3a1 1 0 0 1 0-2H21ZM5.3 12a1 1 0 0 1 0 2H4a1 1 0 1 1 0-2h1.3Zm11.04-5.96a1 1 0 0 1 1.42 0l.92.92a1 1 0 1 1-1.42 1.42l-.92-.92a1 1 0 0 1 0-1.42Zm-9.08 9.08a1 1 0 0 1 1.42 0l.92.92a1 1 0 1 1-1.42 1.42l-.92-.92a1 1 0 0 1 0-1.42Zm10.5 2.34a1 1 0 0 1 0-1.42l.92-.92a1 1 0 1 1 1.42 1.42l-.92.92a1 1 0 0 1-1.42 0Zm-9.08-9.08a1 1 0 0 1 0-1.42l.92-.92a1 1 0 0 1 1.42 1.42l-.92.92a1 1 0 0 1-1.42 0ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" fill="currentColor"/></svg>
+            </button>
+            <button id="animation-toggle" class="icon-button" type="button" title="Animations">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm13-2.5a3.5 3.5 0 1 1-.01 7.01A3.5 3.5 0 0 1 17 11.5Zm0 2a1.5 1.5 0 1 0 .01 3.01A1.5 1.5 0 0 0 17 13.5Z" fill="currentColor"/></svg>
+            </button>
+            <button id="settings-open" class="icon-button" type="button" title="Settings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.14 12.94.02-.94-.02-.94 2.01-1.57a.8.8 0 0 0 .2-1.03l-1.9-3.29a.8.8 0 0 0-.97-.35l-2.37.95a7.9 7.9 0 0 0-1.63-.95l-.36-2.51A.8.8 0 0 0 13.33 1h-3.8a.8.8 0 0 0-.79.67l-.36 2.51a7.9 7.9 0 0 0-1.63.95l-2.37-.95a.8.8 0 0 0-.97.35l-1.9 3.29a.8.8 0 0 0 .2 1.03l2.01 1.57-.02.94.02.94-2.01 1.57a.8.8 0 0 0-.2 1.03l1.9 3.29a.8.8 0 0 0 .97.35l2.37-.95c.5.39 1.05.7 1.63.95l.36 2.51a.8.8 0 0 0 .79.67h3.8a.8.8 0 0 0 .79-.67l.36-2.51c.58-.25 1.13-.56 1.63-.95l2.37.95a.8.8 0 0 0 .97-.35l1.9-3.29a.8.8 0 0 0-.2-1.03l-2.01-1.57ZM11.43 15.5A3.5 3.5 0 1 1 11.43 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/></svg>
+            </button>
+            <button id="workspace-toggle" class="icon-button" type="button" title="Layout mode">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v6H3V4Zm0 10h10v6H3v-6Zm12 0h6v6h-6v-6Z" fill="currentColor"/></svg>
+            </button>
+            <button id="action-toggle-advanced" class="icon-button" type="button" data-i18n-title="action.advanced" title="Show advanced">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v4H3V5Zm0 5h18v4H3v-4Zm0 5h18v4H3v-4Z" fill="currentColor"/></svg>
+            </button>
+          </div>
         </div>
         <div id="status-card" class="status-card">
           <p data-i18n="status.title">Status</p>
@@ -30,19 +59,77 @@
           </strong>
           <span id="status-progress">Tracks: 0/0 (0.0%)</span>
           <span id="status-eta">ETA: -</span>
+          <span id="status-phase">Phase: -</span>
+          <div id="workflow-steps" class="workflow-steps" aria-live="polite">
+            <span id="workflow-step-pre" class="workflow-step">1. Scan disc</span>
+            <span id="workflow-step-review" class="workflow-step">2. Review and adjust</span>
+            <span id="workflow-step-post" class="workflow-step">3. Rip results</span>
+          </div>
+          <span id="action-message" class="status-note"></span>
+          <span id="error-box" class="status-error"></span>
         </div>
       </div>
     </header>
 
     <main class="layout">
-      <section class="panel panel-wide">
+      <section class="panel panel-wide" id="disc-panel">
         <h2 data-i18n="disc.title">Disc</h2>
-        <div id="scan-summary" class="message"></div>
+
+        <div class="disc-meta-grid">
+          <label>
+            <span data-i18n="disc.meta.album">Album</span>
+            <input id="disc-album" type="text" spellcheck="false" />
+          </label>
+          <label>
+            <span data-i18n="disc.meta.artist">Album artist</span>
+            <input id="disc-artist" type="text" spellcheck="false" />
+          </label>
+          <label>
+            <span data-i18n="disc.meta.date">Date</span>
+            <input id="disc-date" type="text" spellcheck="false" />
+          </label>
+        </div>
+
+        <div class="disc-extra-grid">
+          <label>
+            <span data-i18n="metadata.release">Release</span>
+            <input id="release" type="text" spellcheck="false" />
+          </label>
+          <label>
+            <span data-i18n="metadata.disc">Disc</span>
+            <input id="disc-number" type="number" min="1" />
+          </label>
+          <label>
+            <span data-i18n="metadata.totalDiscs">Total discs</span>
+            <input id="total-discs" type="number" min="1" />
+          </label>
+        </div>
+
+        <div class="disc-summary-wrap">
+          <div id="disc-cover-wrap" class="disc-cover-wrap is-empty">
+            <img id="disc-cover-preview" class="disc-cover-preview" alt="Album cover preview" />
+            <div id="disc-cover-spinner" class="disc-cover-spinner is-hidden" aria-hidden="true"></div>
+          </div>
+          <div id="scan-summary" class="message"></div>
+        </div>
 
         <div class="table-wrap">
           <table class="tracks-table">
+            <colgroup>
+              <col class="tracks-col-select" />
+              <col class="tracks-col-track" />
+              <col class="tracks-col-title" />
+              <col class="tracks-col-artist" />
+              <col class="tracks-col-duration" />
+              <col class="tracks-col-status" />
+              <col class="tracks-col-progress" />
+              <col class="tracks-col-accuraterip" />
+            </colgroup>
             <thead>
               <tr>
+                <th>
+                  <input id="tracks-select-all" type="checkbox" />
+                </th>
                 <th data-i18n="table.track">#</th>
                 <th data-i18n="table.title">Title</th>
                 <th data-i18n="table.artist">Artist</th>
@@ -58,212 +145,414 @@
         <div id="tracks-empty" class="message" data-i18n="disc.empty">No disc scanned yet.</div>
       </section>
 
-      <section class="panel">
-        <h2 data-i18n="runtime.title">Runtime</h2>
-        <label>
-          <span class="label-head">
-            <span data-i18n="runtime.binaryPath">Binary path</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.binaryPath">i</span>
-          </span>
-          <input id="binary-path" type="text" value="./bin/cyanrip" spellcheck="false" />
-        </label>
-        <label>
-          <span class="label-head">
-            <span data-i18n="runtime.workingDirectory">Working directory</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.workingDirectory">i</span>
-          </span>
-          <input id="working-directory" type="text" value="{{ default_working_directory }}" spellcheck="false" />
-        </label>
-
-        <div class="actions actions-runtime">
-          <button id="scan-disc" type="button" data-i18n="button.scan">Scan disc</button>
-          <button id="open-drive" type="button" data-i18n="button.openDrive">Open drive</button>
-          <button id="probe-binary" type="button" data-i18n="button.verifyBinary">Verify binary</button>
-          <button id="refresh-preview" type="button" data-i18n="button.commandPreview">Command preview</button>
-          <button id="start-job" type="button" class="accent" data-i18n="button.startRip">Start rip</button>
-          <button id="stop-job" type="button" class="danger" data-i18n="button.stop">Stop</button>
-        </div>
-
-        <div id="probe-result" class="message"></div>
-        <pre id="command-preview" class="terminal"></pre>
-        <div id="error-box" class="error"></div>
-      </section>
-
-      <section class="panel">
+      <section class="panel" id="ripping-panel">
         <h2 data-i18n="ripping.title">Ripping</h2>
-        <div class="grid-2">
+        <div class="device-offset-grid">
           <label>
             <span class="label-head">
-              <span data-i18n="ripping.offset">Offset (-s)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.offset">i</span>
+              <span data-i18n="ripping.deviceMode">Device</span>
+              <span class="hint" data-tip-key="hint.deviceMode">i</span>
             </span>
-            <input id="offset" type="number" />
-          </label>
-          <label>
-            <span class="label-head">
-              <span data-i18n="ripping.devicePath">Device path (-d)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.devicePath">i</span>
-            </span>
+            <div class="toggle-row" data-group="device-mode">
+              <button id="device-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
+              <button id="device-mode-select" class="toggle-option" type="button" data-value="select" data-i18n="mode.select">Select</button>
+              <button id="device-mode-path" class="toggle-option" type="button" data-value="path" data-i18n="mode.path">Path</button>
+            </div>
+            <div class="inline-row device-select-row">
+              <select id="device-select"></select>
+              <button id="refresh-drives" class="icon-button mini-icon-button" type="button" data-i18n-title="button.refreshDrives" title="Refresh drives">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 0 1 6.7 5H16l4 4 4-4h-2.14A10 10 0 1 0 22 15h-3a7 7 0 1 1-7-10Z" fill="currentColor"/></svg>
+              </button>
+            </div>
             <input id="device-path" type="text" spellcheck="false" />
           </label>
+
           <label>
             <span class="label-head">
-              <span data-i18n="ripping.maxRetries">Max retries (-r)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.maxRetries">i</span>
+              <span data-i18n="ripping.offsetMode">Drive offset</span>
+              <span class="hint" data-tip-key="hint.offsetMode">i</span>
+            </span>
+            <div class="toggle-row" data-group="offset-mode">
+              <button id="offset-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
+              <button id="offset-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="mode.manual">Manual</button>
+            </div>
+            <div id="offset-manual-row">
+              <input id="offset" type="number" />
+            </div>
+          </label>
+        </div>
+
+        <div class="ripping-splits">
+          <label>
+            <span class="label-head">
+              <span data-i18n="ripping.maxRetries">Max retries</span>
+              <span class="hint" data-tip-key="hint.maxRetries">i</span>
             </span>
             <input id="max-retries" type="number" min="0" />
           </label>
           <label>
             <span class="label-head">
-              <span data-i18n="ripping.checksumRetries">Checksum retries (-Z)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.checksumRetries">i</span>
+              <span data-i18n="ripping.checksumRetries">Checksum retries</span>
+              <span class="hint" data-tip-key="hint.checksumRetries">i</span>
             </span>
             <input id="ripping-retries" type="number" min="0" />
           </label>
           <label>
-            <span data-i18n="ripping.speed">Speed (-S)</span>
+            <span data-i18n="ripping.speed">Speed</span>
             <input id="speed" type="number" min="0" />
           </label>
           <label>
             <span class="label-head">
-              <span data-i18n="ripping.paranoia">Paranoia (-P)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.paranoia">i</span>
+              <span data-i18n="ripping.paranoia">Paranoia</span>
+              <span class="hint" data-tip-key="hint.paranoia">i</span>
             </span>
-            <input id="paranoia-level" type="text" data-i18n-placeholder="placeholder.paranoia" placeholder="max | none | 0..n" />
+            <div class="toggle-row" data-group="paranoia-mode">
+              <button id="paranoia-mode-max" class="toggle-option" type="button" data-value="max" data-i18n="mode.max">Max</button>
+              <button id="paranoia-mode-numeric" class="toggle-option" type="button" data-value="numeric" data-i18n="mode.numeric">Numeric</button>
+              <button id="paranoia-mode-none" class="toggle-option" type="button" data-value="none" data-i18n="mode.none">None</button>
+            </div>
+            <div id="paranoia-numeric-row">
+              <input id="paranoia-value" type="number" min="0" step="1" />
+            </div>
           </label>
         </div>
 
         <label>
           <span class="label-head">
-            <span data-i18n="ripping.pregapRules">Pregap rules (-p)</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.pregapRules">i</span>
+            <span data-i18n="ripping.pregapRules">Pregap rules</span>
+            <span class="hint" data-tip-key="hint.pregapRules">i</span>
           </span>
           <textarea id="pregap-rules" rows="4" data-i18n-placeholder="placeholder.pregapRules" placeholder="2=merge&#10;7=track"></textarea>
         </label>
 
-        <div class="check-grid">
-          <label><input id="overread-leadinout" type="checkbox" /> <span data-i18n="ripping.overread">Overread (-O)</span></label>
-          <label><input id="decode-hdcd" type="checkbox" /> <span data-i18n="ripping.hdcd">HDCD decode (-H)</span></label>
-          <label><input id="force-deemphasis" type="checkbox" /> <span data-i18n="ripping.forceDeemphasis">Force deemphasis (-E)</span></label>
-          <label><input id="disable-deemphasis" type="checkbox" /> <span data-i18n="ripping.disableDeemphasis">Disable deemphasis (-W)</span></label>
-          <label><input id="disable-replaygain" type="checkbox" /> <span data-i18n="ripping.disableReplayGain">Disable ReplayGain (-K)</span></label>
-          <label><input id="find-drive-offset" type="checkbox" /> <span data-i18n="ripping.findDriveOffset">Find drive offset (-f)</span></label>
+        <div class="grid-3">
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="ripping.overread">Overread</span>
+              <span class="hint" data-tip-key="hint.overread">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="overread-leadinout">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="overread-leadinout" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="ripping.hdcd">HDCD decode</span>
+              <span class="hint" data-tip-key="hint.hdcd">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="decode-hdcd">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="decode-hdcd" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <label>
+            <span data-i18n="ripping.deemphasis">Deemphasis</span>
+            <div class="toggle-row" data-group="deemphasis-mode">
+              <button id="deemphasis-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
+              <button id="deemphasis-mode-force" class="toggle-option" type="button" data-value="force" data-i18n="mode.force">Force</button>
+              <button id="deemphasis-mode-disable" class="toggle-option" type="button" data-value="disable" data-i18n="mode.disable">Disable</button>
+            </div>
+          </label>
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="output-panel">
         <h2 data-i18n="output.title">Output</h2>
-        <p class="small-note" data-i18n="output.note">Select formats and naming. Default profile is tuned for safe FLAC rips.</p>
+        <p class="small-note" data-i18n="output.note">Select formats and naming.</p>
+
+        <label>
+          <span class="label-head">
+            <span data-i18n="output.baseDirectory">Output base directory</span>
+            <span class="hint" data-tip-key="hint.baseDirectory">i</span>
+          </span>
+          <div class="toggle-row" data-group="outputDir-mode">
+            <button id="output-dir-mode-workdir" class="toggle-option" type="button" data-value="workdir" data-i18n="output.useWorkdir">Use settings directory</button>
+            <button id="output-dir-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="output.useManualDir">Manual directory</button>
+          </div>
+          <div id="output-directory-manual-row" class="inline-row">
+            <input id="output-directory-manual" type="text" spellcheck="false" />
+            <button id="browse-output-directory" type="button" data-i18n="button.browseDirectory">Browse</button>
+          </div>
+        </label>
+
         <div class="outputs" id="outputs-container"></div>
 
         <div class="grid-2">
           <label>
-            <span data-i18n="output.bitrate">Bitrate kbps (-b)</span>
+            <span data-i18n="output.bitrate">Bitrate kbps</span>
             <input id="bitrate" type="number" min="1" />
           </label>
           <label>
             <span class="label-head">
-              <span data-i18n="output.sanitation">Sanitation (-T)</span>
-              <span class="hint" tabindex="0" data-tip-key="hint.sanitation">i</span>
+              <span data-i18n="output.sanitation">Sanitation</span>
+              <span class="hint" data-tip-key="hint.sanitation">i</span>
             </span>
             <select id="sanitation"></select>
           </label>
         </div>
 
-        <label>
-          <span data-i18n="output.directoryScheme">Directory scheme (-D)</span>
-          <input id="directory-scheme" type="text" spellcheck="false" />
-        </label>
-        <label>
-          <span data-i18n="output.trackScheme">Track scheme (-F)</span>
-          <input id="track-scheme" type="text" spellcheck="false" />
-        </label>
-        <label>
-          <span data-i18n="output.logScheme">Log scheme (-L)</span>
-          <input id="log-scheme" type="text" spellcheck="false" />
-        </label>
-        <label>
-          <span data-i18n="output.cueScheme">CUE scheme (-M)</span>
-          <input id="cue-scheme" type="text" spellcheck="false" />
-        </label>
+        <p class="small-note scheme-tabs-note" data-i18n="output.schemeTabsHint">Choose one tab to edit its scheme.</p>
+        <div class="scheme-targets" role="tablist" aria-label="Scheme target selection">
+          <button id="scheme-target-directory" class="scheme-target is-active" role="tab" aria-selected="true" type="button" data-target="directory-scheme" data-i18n="output.directoryScheme">Directory scheme</button>
+          <button id="scheme-target-track" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="track-scheme" data-i18n="output.trackScheme">Track scheme</button>
+          <button id="scheme-target-log" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="log-scheme" data-i18n="output.logScheme">Log scheme</button>
+          <button id="scheme-target-cue" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="cue-scheme" data-i18n="output.cueScheme">CUE scheme</button>
+        </div>
+
+        <div class="scheme-active-summary">
+          <strong id="scheme-active-title">Directory scheme</strong>
+          <span id="scheme-active-preview"></span>
+        </div>
+
         <label>
           <span class="label-head">
-            <span data-i18n="output.trackSelection">Track selection (-l)</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.trackSelection">i</span>
+            <span data-i18n="output.schemeMode">Scheme mode</span>
+            <span class="hint" data-tip-key="hint.schemeMode">i</span>
           </span>
-          <input id="track-selection" type="text" data-i18n-placeholder="placeholder.trackSelection" placeholder="1,2,3" spellcheck="false" />
+          <div class="toggle-row" data-group="scheme-mode">
+            <button id="scheme-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
+            <button id="scheme-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="mode.manual">Manual</button>
+          </div>
         </label>
+
+        <div class="is-hidden">
+          <div class="scheme-group" data-target="directory-scheme">
+            <label>
+              <span data-i18n="output.directoryScheme">Directory scheme</span>
+              <input id="directory-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="track-scheme">
+            <label>
+              <span data-i18n="output.trackScheme">Track scheme</span>
+              <input id="track-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="log-scheme">
+            <label>
+              <span data-i18n="output.logScheme">Log scheme</span>
+              <input id="log-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="cue-scheme">
+            <label>
+              <span data-i18n="output.cueScheme">CUE scheme</span>
+              <input id="cue-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+        </div>
+
+        <div id="scheme-composer-area" class="scheme-composer">
+          <p class="small-note" data-i18n="output.schemeComposerNote">Build scheme using drag and drop tokens and text parts.</p>
+          <div id="scheme-tokens" class="scheme-palette"></div>
+          <div class="scheme-builder-row">
+            <input id="scheme-literal-input" type="text" data-i18n-placeholder="placeholder.schemeLiteral" placeholder="Literal text fragment" spellcheck="false" />
+            <button id="scheme-add-literal" type="button" data-i18n="button.addLiteral">Add text</button>
+            <button id="scheme-clear-active" type="button" data-i18n="button.clearScheme">Clear</button>
+          </div>
+          <div id="scheme-dropzone" class="scheme-dropzone"></div>
+        </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="metadata-panel">
         <h2 data-i18n="metadata.title">Metadata and misc</h2>
-
-        <div class="check-grid">
-          <label><input id="print-info-only" type="checkbox" /> <span data-i18n="metadata.infoOnly">Info only (-I)</span></label>
-          <label><input id="disable-mb" type="checkbox" /> <span data-i18n="metadata.disableMb">Disable MusicBrainz (-N)</span></label>
-          <label><input id="disable-accurip" type="checkbox" /> <span data-i18n="metadata.disableAccurateRip">Disable AccurateRip (-A)</span></label>
-          <label><input id="disable-coverart-db" type="checkbox" /> <span data-i18n="metadata.disableCoverArtDb">Disable Cover Art DB (-U)</span></label>
-          <label><input id="disable-coverart-embedding" type="checkbox" /> <span data-i18n="metadata.disableEmbedding">Disable embedding (-G)</span></label>
-          <label><input id="eject-on-success" type="checkbox" /> <span data-i18n="metadata.eject">Eject after success (-Q)</span></label>
-          <label><input id="print-version" type="checkbox" /> <span data-i18n="metadata.printVersion">Print version (-V)</span></label>
-          <label><input id="show-help" type="checkbox" /> <span data-i18n="metadata.showHelp">Show help (-h)</span></label>
-        </div>
-
-        <label>
-          <span class="label-head">
-            <span data-i18n="metadata.albumMetadata">Album metadata (-a)</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.albumMetadata">i</span>
-          </span>
-          <textarea id="album-metadata" rows="3" data-i18n-placeholder="placeholder.albumMetadata" placeholder="album=Name:album_artist=Artist:date=2026"></textarea>
-        </label>
-        <label>
-          <span class="label-head">
-            <span data-i18n="metadata.trackMetadata">Track metadata (-t)</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.trackMetadata">i</span>
-          </span>
-          <textarea id="track-metadata" rows="5" data-i18n-placeholder="placeholder.trackMetadata" placeholder="1=title=Intro:artist=Band&#10;2=title=Main Song"></textarea>
-        </label>
-
         <div class="grid-3">
-          <label>
-            <span data-i18n="metadata.release">Release (-R)</span>
-            <input id="release" type="text" spellcheck="false" />
-          </label>
-          <label>
-            <span data-i18n="metadata.disc">Disc (-c)</span>
-            <input id="disc-number" type="number" min="1" />
-          </label>
-          <label>
-            <span data-i18n="metadata.totalDiscs">Total discs (-c)</span>
-            <input id="total-discs" type="number" min="1" />
-          </label>
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableMb">Enable MusicBrainz</span>
+              <span class="hint" data-tip-key="hint.enableMb">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-mb">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-mb" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableAccurateRip">Enable AccurateRip</span>
+              <span class="hint" data-tip-key="hint.enableAccurateRip">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-accurip">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-accurip" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableCoverArtDb">Enable Cover Art DB</span>
+              <span class="hint" data-tip-key="hint.enableCoverArtDb">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-coverart-db">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-coverart-db" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableEmbedding">Enable embedding</span>
+              <span class="hint" data-tip-key="hint.enableEmbedding">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-embedding">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-embedding" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableReplayGain">Enable ReplayGain</span>
+              <span class="hint" data-tip-key="hint.enableReplayGain">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-replaygain">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-replaygain" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.eject">Eject after success</span>
+              <span class="hint" data-tip-key="hint.ejectOnSuccess">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="eject-on-success">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="eject-on-success" class="visually-hidden-input" type="checkbox" />
+          </div>
         </div>
 
         <label>
           <span class="label-head">
-            <span data-i18n="metadata.coverArt">Cover art (-C)</span>
-            <span class="hint" tabindex="0" data-tip-key="hint.coverArt">i</span>
+            <span data-i18n="metadata.coverArt">Cover art</span>
+            <span class="hint" data-tip-key="hint.coverArt">i</span>
           </span>
           <textarea id="cover-arts" rows="4" data-i18n-placeholder="placeholder.coverArts" placeholder="Front=/tmp/cover.jpg&#10;2=/tmp/track2.jpg"></textarea>
         </label>
 
         <label>
-          <span data-i18n="metadata.coverArtSize">Cover art max size (-m)</span>
+          <span data-i18n="metadata.coverArtSize">Cover art max size</span>
           <select id="coverart-lookup-size"></select>
         </label>
       </section>
 
-      <section class="panel panel-wide">
-        <h2 data-i18n="log.title">Live log</h2>
-        <pre id="job-log" class="terminal"></pre>
-      </section>
     </main>
+
+    <aside class="advanced-drawer is-hidden" id="advanced-panel" aria-live="polite">
+      <div id="advanced-resize-handle" class="advanced-resize-handle" aria-hidden="true"></div>
+      <div class="advanced-drawer-head">
+        <h2 data-i18n="advanced.title">Advanced</h2>
+        <button id="advanced-close" class="icon-button" type="button" data-i18n-title="action.advancedHide" title="Hide advanced">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="advanced-grid">
+        <div>
+          <h3 data-i18n="advanced.command">Command preview</h3>
+          <pre id="command-preview" class="terminal"></pre>
+        </div>
+        <div>
+          <div class="advanced-subhead">
+            <h3 data-i18n="advanced.log">Live log</h3>
+            <div class="advanced-log-actions">
+              <button id="advanced-log-copy" class="icon-button mini-icon-button" type="button" data-i18n-title="advanced.copyLog" title="Copy log">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h9a2 2 0 0 1 2 2v11h-2V5H9V3Zm-4 4h9a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v11h9V9H5Z" fill="currentColor"/></svg>
+              </button>
+              <button id="advanced-log-download" class="icon-button mini-icon-button" type="button" data-i18n-title="advanced.downloadLog" title="Download log">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10.17l2.59-2.58L17 12l-5 5-5-5 1.41-1.41L11 13.17V3ZM5 19h14v2H5v-2Z" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="advanced-log-feedback" class="advanced-log-feedback"></div>
+          <pre id="job-log" class="terminal"></pre>
+        </div>
+      </div>
+    </aside>
+
+    <div id="settings-overlay" class="modal-overlay is-hidden" aria-hidden="true">
+      <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal-head">
+          <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
+          <button id="settings-close" class="icon-button" type="button" data-i18n-title="settings.close" title="Close settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <label>
+            <span data-i18n="settings.language">Language</span>
+            <select id="settings-language"></select>
+          </label>
+
+          <label>
+            <span data-i18n="settings.binaryPath">Binary path</span>
+            <input id="settings-binary-path" type="text" spellcheck="false" />
+          </label>
+
+          <label>
+            <span data-i18n="settings.workingDirectory">Working directory</span>
+            <div class="inline-row">
+              <input id="settings-working-directory" type="text" spellcheck="false" />
+              <button id="settings-browse-working-directory" type="button" data-i18n="button.browseDirectory">Browse</button>
+            </div>
+          </label>
+
+          <div class="binary-state" id="settings-binary-status"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="settings-probe-binary" type="button" data-i18n="settings.checkBinary">Check binary</button>
+          <button id="settings-save" class="accent" type="button" data-i18n="settings.save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="directory-picker-overlay" class="modal-overlay is-hidden" aria-hidden="true">
+      <div class="modal directory-picker" role="dialog" aria-modal="true" aria-labelledby="directory-picker-title">
+        <div class="modal-head">
+          <h2 id="directory-picker-title" data-i18n="directoryPicker.title">Select directory</h2>
+          <button id="directory-picker-close" class="icon-button" type="button" data-i18n-title="directoryPicker.close" title="Close directory picker">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="directory-picker-path" id="directory-picker-current-path"></div>
+
+        <div class="directory-picker-tools">
+          <button id="directory-picker-go-up" type="button" data-i18n="directoryPicker.up">Up</button>
+          <button id="directory-picker-go-home" type="button" data-i18n="directoryPicker.home">Home</button>
+          <button id="directory-picker-go-project" type="button" data-i18n="directoryPicker.project">Project</button>
+          <button id="directory-picker-refresh" type="button" data-i18n="button.refresh">Refresh</button>
+        </div>
+
+        <div id="directory-picker-list" class="directory-picker-list"></div>
+
+        <div class="modal-actions">
+          <button id="directory-picker-cancel" type="button" data-i18n="directoryPicker.cancel">Cancel</button>
+          <button id="directory-picker-select" class="accent" type="button" data-i18n="directoryPicker.select">Use this directory</button>
+        </div>
+      </div>
+    </div>
 
     <script>
       window.CYANRIP_DEFAULTS = {{ default_config | tojson }};
       window.CYANRIP_OUTPUTS = {{ supported_outputs | tojson }};
       window.CYANRIP_SANITATION = {{ sanitation_modes | tojson }};
       window.CYANRIP_COVERART_SIZES = {{ coverart_lookup_sizes | tojson }};
+      window.CYANRIP_INITIAL_SETTINGS = {{ initial_settings | tojson }};
     </script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
