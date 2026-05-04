@@ -132,6 +132,25 @@ class CyanripJobRunner:
 
         return self.snapshot()
 
+    def reset_runtime_state(self) -> None:
+        with self._lock:
+            if self._state == "running" and self._process is not None:
+                raise RuntimeError("Ein laufender Rip-Prozess kann nicht zurueckgesetzt werden.")
+
+            self._state = "idle"
+            self._job_id = None
+            self._command = []
+            self._shell_command = ""
+            self._working_directory = None
+            self._started_at = None
+            self._finished_at = None
+            self._returncode = None
+            self._process = None
+            self._reader_thread = None
+            self._stop_requested = False
+            self._next_log_index = 0
+            self._logs.clear()
+
     def update_scan_result(
         self,
         disc_info: dict[str, Any] | None,
@@ -279,9 +298,17 @@ class CyanripJobRunner:
 
     def _append_log(self, line: str) -> None:
         normalized = line.rstrip("\n")
+        self._consume_runtime_signal(normalized)
+        if self._should_filter_log_line(normalized):
+            return
         self._logs.append(LogLine(index=self._next_log_index, line=normalized))
         self._next_log_index += 1
-        self._consume_runtime_signal(normalized)
+
+    def _should_filter_log_line(self, raw_line: str) -> bool:
+        line = (raw_line or "").strip()
+        if not line:
+            return True
+        return bool(_PROGRESS_RE.match(line))
 
     def _consume_runtime_signal(self, raw_line: str) -> None:
         line = (raw_line or "").strip()

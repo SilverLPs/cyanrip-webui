@@ -14,6 +14,7 @@
   const COOKIE_ADVANCED_HEIGHT = "cyanrip_advanced_height";
   const COOKIE_WORKSPACE = "cyanrip_workspace_mode";
   const UI_PREFS_KEY = "cyanrip_ui_prefs_v2";
+  const APP_SETTINGS_KEY = "cyanrip_runtime_settings_v1";
   const OFFSET_PROFILE_MISC = "__misc__";
 
   const ADVANCED_MIN_HEIGHT = 180;
@@ -27,6 +28,11 @@
     previewTimer: null,
     previewRenderToken: 0,
     uiPrefsTimer: null,
+    wsReconnectTimer: null,
+    wsReconnectDelayMs: 1200,
+    ws: null,
+    wsEnabled: false,
+    statusPollTimer: null,
     currentJobId: null,
     nextLogIndex: null,
 
@@ -44,6 +50,7 @@
       device_profiles: {},
       misc_offset: 0,
     },
+    websocketAvailable: false,
 
     binaryProbe: null,
     drives: [],
@@ -143,6 +150,7 @@
     renderSettingsLanguageOptions();
 
     applyDefaults();
+    loadRuntimeSettingsFromStorage();
     loadPreferenceCookies();
     initializeBinaryToggleRows();
     initializeToggleModes();
@@ -176,8 +184,7 @@
     applyWorkspaceVisibility(currentWorkflowPhase().name);
 
     refreshPreview();
-    refreshStatusAndLogs();
-    window.setInterval(refreshStatusAndLogs, 1500);
+    startStatusStream();
   }
 
   function wireEvents() {
@@ -203,6 +210,7 @@
 
     el("refresh-drives").addEventListener("click", refreshDrives);
     el("device-select").addEventListener("change", onDriveChanged);
+    el("release-candidate-apply").addEventListener("click", applySelectedReleaseCandidateAndRescan);
     el("browse-output-directory").addEventListener("click", () => {
       openDirectoryPicker("output-directory-manual");
     });
@@ -456,32 +464,75 @@
     setToggleMode("deemphasis", state.modes.deemphasis || "auto");
   }
 
+  function loadRuntimeSettingsFromStorage() {
+    let parsed = {};
+    try {
+      parsed = JSON.parse(window.localStorage.getItem(APP_SETTINGS_KEY) || "{}");
+    } catch (_) {
+      parsed = {};
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      applySettings(DEFAULT_RUNTIME_SETTINGS());
+      return;
+    }
+    applySettings(parsed);
+  }
+
+  function persistRuntimeSettingsToStorage() {
+    try {
+      window.localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(state.settings));
+    } catch (_) {
+      // Ignore storage failures and continue without persistence.
+    }
+  }
+
+  function DEFAULT_RUNTIME_SETTINGS() {
+    return {
+      binary_path: "./bin/cyanrip",
+      working_directory: "./output",
+      language: state.locale || "en",
+      device_profiles: {},
+      misc_offset: 0,
+    };
+  }
+
   async function loadSettings() {
     clearError();
 
     try {
       const response = await apiGet("/api/settings");
-      const settings = response.settings || {};
+      const backendDefaults = response.settings || {};
       const binary = response.binary || null;
+      state.websocketAvailable = !!response.websocket_available;
 
-      applySettings(settings);
+      const merged = {
+        ...backendDefaults,
+        ...(state.settings || {}),
+      };
+      applySettings(merged);
       state.binaryProbe = binary;
       renderBinaryStatus();
+
+      const resolvedProbePath = String((binary && binary.binary_path) || "").trim();
+      const desiredPath = String(state.settings.binary_path || "").trim();
+      if (desiredPath && desiredPath !== resolvedProbePath) {
+        await checkBinaryFromSettings();
+      }
     } catch (error) {
       showError(error.message);
-      applySettings(initialSettings || {});
+      state.websocketAvailable = false;
+      applySettings(state.settings || initialSettings || {});
     }
   }
 
   function applySettings(settings) {
     const merged = {
-      binary_path: "./bin/cyanrip",
-      working_directory: "./output",
-      language: "en",
-      device_profiles: {},
-      misc_offset: 0,
+      ...DEFAULT_RUNTIME_SETTINGS(),
       ...settings,
     };
+    merged.device_profiles = sanitizeDeviceProfiles(merged.device_profiles);
+    merged.misc_offset = normalizeOptionalInt(merged.misc_offset) ?? 0;
 
     state.settings = merged;
 
@@ -489,7 +540,12 @@
     el("settings-working-directory").value = merged.working_directory || "./output";
     el("settings-language").value = normalizeLocale(merged.language) || "en";
 
-    if (merged.language && normalizeLocale(merged.language) !== state.locale) {
+    if (
+      merged.language &&
+      normalizeLocale(merged.language) !== state.locale &&
+      state.fallbackDictionary &&
+      Object.keys(state.fallbackDictionary).length > 0
+    ) {
       setLocale(normalizeLocale(merged.language) || "en").then(() => {
         applyTranslations();
         updateToolbarButtonTitles();
@@ -505,28 +561,26 @@
   async function saveSettings() {
     clearError();
 
-    const payload = {
-      settings: {
-        binary_path: el("settings-binary-path").value.trim(),
-        working_directory: el("settings-working-directory").value.trim(),
-        language: normalizeLocale(el("settings-language").value) || "en",
-      },
+    const updated = {
+      ...state.settings,
+      binary_path: el("settings-binary-path").value.trim() || "./bin/cyanrip",
+      working_directory: el("settings-working-directory").value.trim() || "./output",
+      language: normalizeLocale(el("settings-language").value) || "en",
     };
 
     try {
-      const response = await apiPost("/api/settings", payload);
-      applySettings(response.settings || {});
-      state.binaryProbe = response.binary || null;
-      renderBinaryStatus();
+      applySettings(updated);
+      persistRuntimeSettingsToStorage();
       closeSettingsModal();
       setMessage("action-message", t("message.settingsSaved"));
 
-      await setLocale(payload.settings.language);
+      await setLocale(updated.language);
       applyTranslations();
       updateToolbarButtonTitles();
       refreshAllTrackLabels();
       updateStatusPanel();
       refreshPreview();
+      await checkBinaryFromSettings();
     } catch (error) {
       showError(error.message);
     }
@@ -585,7 +639,6 @@
     const overlay = el("directory-picker-overlay");
     overlay.classList.remove("is-hidden");
     overlay.setAttribute("aria-hidden", "false");
-    document.body.classList.add("modal-open");
 
     await navigateDirectoryPicker(state.directoryPicker.currentPath);
   }
@@ -594,9 +647,6 @@
     const overlay = el("directory-picker-overlay");
     overlay.classList.add("is-hidden");
     overlay.setAttribute("aria-hidden", "true");
-    if (el("settings-overlay").classList.contains("is-hidden")) {
-      document.body.classList.remove("modal-open");
-    }
   }
 
   async function directoryPickerGoUp() {
@@ -705,7 +755,8 @@
 
   async function refreshDrives() {
     try {
-      const response = await apiGet("/api/drives");
+      const profilesRaw = encodeURIComponent(JSON.stringify(state.settings.device_profiles || {}));
+      const response = await apiGet(`/api/drives?profiles=${profilesRaw}`);
       state.drives = Array.isArray(response.drives) ? response.drives : [];
       renderDrives();
       applyOffsetForCurrentDeviceMode(false);
@@ -801,33 +852,28 @@
       return;
     }
 
-    try {
-      const response = await apiPost("/api/drives/offset", {
-        device_id: deviceId,
-        offset: offsetValue,
-      });
-      if (Array.isArray(response.drives)) {
-        state.drives = response.drives;
-      } else {
-        const index = state.drives.findIndex((item) => item.id === deviceId);
-        if (index >= 0 && deviceId !== OFFSET_PROFILE_MISC) {
-          state.drives[index] = { ...state.drives[index], saved_offset: offsetValue };
-        }
+    if (deviceId === OFFSET_PROFILE_MISC) {
+      state.settings.misc_offset = offsetValue;
+    } else {
+      const profiles = { ...(state.settings.device_profiles || {}) };
+      profiles[deviceId] = { offset: offsetValue };
+      state.settings.device_profiles = profiles;
+      state.selectedDriveId = deviceId;
+      const index = state.drives.findIndex((item) => item.id === deviceId);
+      if (index >= 0) {
+        state.drives[index] = {
+          ...state.drives[index],
+          saved_offset: offsetValue,
+        };
       }
-      if (response.settings && typeof response.settings === "object") {
-        state.settings = { ...state.settings, ...response.settings };
-      } else if (deviceId === OFFSET_PROFILE_MISC) {
-        state.settings.misc_offset = offsetValue;
-      }
-      renderDrives();
-      if (deviceId !== OFFSET_PROFILE_MISC) {
-        state.selectedDriveId = deviceId;
-        el("device-select").value = deviceId;
-      }
-      saveUiPreferencesDebounced();
-    } catch (_) {
-      // Persistence is best-effort for UI convenience.
     }
+
+    renderDrives();
+    if (deviceId !== OFFSET_PROFILE_MISC) {
+      el("device-select").value = deviceId;
+    }
+    persistRuntimeSettingsToStorage();
+    saveUiPreferencesDebounced();
   }
 
   async function resetSession() {
@@ -842,6 +888,7 @@
       state.nextLogIndex = null;
       state.activeLogSource = null;
       state.scanInProgress = false;
+      hideReleaseCandidates();
       updateDiscMetaDirtyIndicators();
       setMessage("action-message", t("message.backToScan"));
       refreshPreview();
@@ -852,7 +899,7 @@
 
   async function runPrimaryDiscAction() {
     const workflow = currentWorkflowPhase();
-    if (workflow.name === "post_scan") {
+    if (workflow.name === "post_scan" || workflow.name === "post_rip") {
       await startJob();
       return;
     }
@@ -874,9 +921,14 @@
       const result = await apiPost("/api/scan", payload);
       applySessionSnapshot(result.session || null);
       applyDiscSnapshot(result.disc || {}, Array.isArray(result.tracks) ? result.tracks : []);
+      hideReleaseCandidates();
       updateDiscMetaDirtyIndicators();
       setMessage("action-message", t("message.scanDone"));
     } catch (error) {
+      const releaseCandidates = extractReleaseCandidatesFromError(error);
+      if (releaseCandidates.length > 0) {
+        showReleaseCandidates(releaseCandidates);
+      }
       const message = String((error && error.message) || "");
       if (message.toLowerCase().includes("abgebrochen") || message.toLowerCase().includes("cancel")) {
         clearError();
@@ -894,7 +946,7 @@
 
   async function startJob() {
     clearError();
-    if (currentWorkflowPhase().name !== "post_scan") {
+    if (!["post_scan", "post_rip"].includes(currentWorkflowPhase().name)) {
       showError(t("error.scanRequired"));
       return;
     }
@@ -947,7 +999,10 @@
     }
 
     try {
-      const result = await apiPost("/api/eject", { device_path: devicePath });
+      const result = await apiPost("/api/eject", {
+        device_path: devicePath,
+        device_profiles: sanitizeDeviceProfiles(state.settings.device_profiles),
+      });
       const lines = [];
       lines.push(result.message || t("message.ejectDone"));
       if (result.output_preview) {
@@ -990,35 +1045,132 @@
     return "";
   }
 
+  function startStatusStream() {
+    connectStatusWebSocket();
+  }
+
+  function startStatusPolling() {
+    if (state.statusPollTimer !== null) {
+      return;
+    }
+    refreshStatusAndLogs();
+    state.statusPollTimer = window.setInterval(refreshStatusAndLogs, 1500);
+  }
+
+  function stopStatusPolling() {
+    if (state.statusPollTimer === null) {
+      return;
+    }
+    window.clearInterval(state.statusPollTimer);
+    state.statusPollTimer = null;
+  }
+
+  function connectStatusWebSocket() {
+    if (state.ws) {
+      return;
+    }
+
+    stopStatusPolling();
+    if (state.wsReconnectTimer !== null) {
+      window.clearTimeout(state.wsReconnectTimer);
+      state.wsReconnectTimer = null;
+    }
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socketUrl = `${protocol}//${window.location.host}/ws/status`;
+    const socket = new WebSocket(socketUrl);
+    state.ws = socket;
+
+    socket.addEventListener("open", () => {
+      state.wsEnabled = true;
+      state.wsReconnectDelayMs = 1200;
+    });
+
+    socket.addEventListener("message", (event) => {
+      let payload = {};
+      try {
+        payload = JSON.parse(String(event.data || "{}"));
+      } catch (_) {
+        return;
+      }
+      if (!payload || payload.type !== "status") {
+        return;
+      }
+      const status = payload.status || {};
+      const logs = Array.isArray(payload.logs) ? payload.logs : [];
+      applyStatusAndLogs(status, logs);
+    });
+
+    socket.addEventListener("error", () => {
+      socket.close();
+    });
+
+    socket.addEventListener("close", () => {
+      state.wsEnabled = false;
+      if (state.ws === socket) {
+        state.ws = null;
+      }
+      if (state.websocketAvailable) {
+        state.websocketAvailable = false;
+      }
+      scheduleStatusReconnect();
+    });
+  }
+
+  function scheduleStatusReconnect() {
+    if (state.wsReconnectTimer !== null) {
+      return;
+    }
+    startStatusPolling();
+    state.wsReconnectTimer = window.setTimeout(() => {
+      state.wsReconnectTimer = null;
+      if (state.ws) {
+        return;
+      }
+      connectStatusWebSocket();
+    }, state.wsReconnectDelayMs);
+    state.wsReconnectDelayMs = Math.min(9000, Math.round(state.wsReconnectDelayMs * 1.45));
+  }
+
   async function refreshStatusAndLogs() {
+    if (state.wsEnabled) {
+      return;
+    }
     try {
-      const status = await apiGet("/api/status");
-      applyStatusSnapshot(status);
-
-      const source = String(status.log_source || "rip");
-      if (state.activeLogSource !== source) {
-        state.activeLogSource = source;
-        state.nextLogIndex = null;
-        el("job-log").textContent = "";
+      const since = state.nextLogIndex ?? "";
+      const params = new URLSearchParams();
+      if (since !== "") {
+        params.set("since", String(since));
       }
-
-      if (status.log_oldest_index !== undefined && status.log_oldest_index !== null) {
-        if (state.nextLogIndex === null) {
-          state.nextLogIndex = status.log_oldest_index;
-        }
+      if (state.activeLogSource) {
+        params.set("source", state.activeLogSource);
       }
-
-      const since = state.nextLogIndex ?? 0;
-      const logs = await apiGet(
-        `/api/logs?source=${encodeURIComponent(source)}&since=${encodeURIComponent(String(since))}`,
-      );
-      appendLogs(logs.lines || []);
-      state.nextLogIndex = logs.next_index;
-
-      updateStatusPanel();
+      const query = params.toString() ? `?${params.toString()}` : "";
+      const status = await apiGet(`/api/status${query}`);
+      if (status.log_next_index !== undefined && status.log_next_index !== null) {
+        state.nextLogIndex = status.log_next_index;
+      }
+      applyStatusAndLogs(status, status.logs || []);
     } catch (error) {
       showError(error.message);
     }
+  }
+
+  function syncLogSource(status) {
+    const source = String((status && status.log_source) || "scan");
+    if (state.activeLogSource !== source) {
+      state.activeLogSource = source;
+      state.nextLogIndex = null;
+      el("job-log").textContent = "";
+    }
+    return source;
+  }
+
+  function applyStatusAndLogs(status, lines) {
+    syncLogSource(status);
+    applyStatusSnapshot(status);
+    appendLogs(lines);
+    updateStatusPanel();
   }
 
   function applyStatusSnapshot(status) {
@@ -1037,7 +1189,6 @@
 
     applySessionSnapshot(status.session || null);
 
-    const scan = status && typeof status.scan === "object" ? status.scan : {};
     const disc = status && typeof status.disc === "object" ? status.disc : {};
     const rip = status && typeof status.rip === "object" ? status.rip : {};
 
@@ -1066,10 +1217,6 @@
       state.ripMeta.eta = rip.eta.trim();
     } else {
       state.ripMeta.eta = null;
-    }
-
-    if (scan.last_success && state.trackRows.size > 0 && state.session.phase === "idle") {
-      state.session.phase = "scanned";
     }
 
     if (phaseRaw && phaseRaw !== "scanning") {
@@ -1183,7 +1330,98 @@
     setDiscInputValue("total-discs", "", false);
     updateDiscMetaDirtyIndicators();
     setMessage("scan-summary", "");
+    hideReleaseCandidates();
     renderDiscCoverPreview();
+  }
+
+  function extractReleaseCandidatesFromError(error) {
+    const payload = error && typeof error === "object" ? error.payload : null;
+    if (!payload || payload.error_kind !== "release_selection_required") {
+      return [];
+    }
+    const richOptions = Array.isArray(payload.release_options) ? payload.release_options : [];
+    const normalizedOptions = richOptions
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+        const id = String(entry.id || "").trim();
+        if (!id) {
+          return null;
+        }
+        const label = String(entry.label || id).trim() || id;
+        return { id, label };
+      })
+      .filter(Boolean);
+    if (normalizedOptions.length > 0) {
+      return normalizedOptions;
+    }
+
+    if (!Array.isArray(payload.release_candidates)) {
+      return [];
+    }
+    return payload.release_candidates
+      .map((item) => String(item || "").trim())
+      .filter((item) => item.length > 0)
+      .map((id) => ({ id, label: id }));
+  }
+
+  function showReleaseCandidates(candidates) {
+    const wrap = el("release-choice");
+    const select = el("release-candidate-select");
+    const options = [];
+    const seen = new Set();
+    (candidates || []).forEach((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return;
+      }
+      const id = String(entry.id || "").trim();
+      const label = String(entry.label || id).trim() || id;
+      const key = id.toLowerCase();
+      if (!id || seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      options.push({ id, label });
+    });
+
+    if (options.length === 0) {
+      hideReleaseCandidates();
+      return;
+    }
+
+    select.innerHTML = "";
+    options.forEach((entry) => {
+      const option = document.createElement("option");
+      option.value = entry.id;
+      option.textContent = entry.label;
+      select.appendChild(option);
+    });
+
+    wrap.classList.remove("is-hidden");
+    el("release").value = options[0].id;
+    updateDiscMetaDirtyIndicators();
+  }
+
+  function hideReleaseCandidates() {
+    const wrap = el("release-choice");
+    if (wrap) {
+      wrap.classList.add("is-hidden");
+    }
+    const select = el("release-candidate-select");
+    if (select) {
+      select.innerHTML = "";
+    }
+  }
+
+  async function applySelectedReleaseCandidateAndRescan() {
+    const selected = String(el("release-candidate-select").value || "").trim();
+    if (!selected) {
+      return;
+    }
+    el("release").value = selected;
+    updateDiscMetaDirtyIndicators();
+    await scanDisc();
   }
 
   function renderDiscSummary() {
@@ -1344,7 +1582,9 @@
       return { kind: "inline", url: candidate };
     }
 
-    return { kind: "local", url: `/api/cover?path=${encodeURIComponent(candidate)}` };
+    const releaseId = String(disc.release_id || disc.release || el("release").value || "").trim();
+    const releaseSuffix = releaseId ? `&release_id=${encodeURIComponent(releaseId)}` : "";
+    return { kind: "local", url: `/api/cover?path=${encodeURIComponent(candidate)}${releaseSuffix}` };
   }
 
   function resolveCoverSourceCandidate(raw, disc) {
@@ -1364,6 +1604,14 @@
         if (!rawCandidate) {
           continue;
         }
+        const candidateLower = rawCandidate.toLowerCase();
+        if (
+          candidateLower.includes("cover art db") ||
+          candidateLower.includes("from: cover art") ||
+          candidateLower.includes("(from:")
+        ) {
+          continue;
+        }
         if (rawCandidate.startsWith("data:image/")) {
           return rawCandidate;
         }
@@ -1376,7 +1624,7 @@
       }
     }
 
-    const releaseId = String(disc.release_id || disc.release || "").trim();
+    const releaseId = String(disc.release_id || disc.release || el("release").value || "").trim();
     if (releaseId && /^[A-Za-z0-9-]{8,}$/.test(releaseId)) {
       return `https://coverartarchive.org/release/${encodeURIComponent(releaseId)}/front`;
     }
@@ -2646,20 +2894,17 @@
     const running = workflow.name === "rip_running" || workflow.name === "scan_running";
     const inPreScan = workflow.name === "pre_scan" || workflow.name === "scan_running";
 
+    if (inPreScan) {
+      hideReleaseCandidates();
+    }
+
     updatePrimaryActionButton(workflow);
 
     el("action-primary").disabled = running;
     el("action-stop").disabled = !running;
     el("action-eject").disabled = running;
     el("action-back-to-scan").disabled = running || inPreScan;
-
-    const allowDiscAndTrackEditing = !running;
-    el("tracks-select-all").disabled = !allowDiscAndTrackEditing;
-    state.trackRows.forEach((row) => {
-      row.selectedInput.disabled = !allowDiscAndTrackEditing;
-      row.titleInput.disabled = !allowDiscAndTrackEditing;
-      row.artistInput.disabled = !allowDiscAndTrackEditing;
-    });
+    setConfigurationEditingLocked(running);
 
     applyPhasePanelFocus(workflow.name);
     applyWorkspaceVisibility(workflow.name);
@@ -2667,7 +2912,7 @@
 
   function updatePrimaryActionButton(workflow) {
     const button = el("action-primary");
-    const startMode = workflow.name === "post_scan";
+    const startMode = ["post_scan", "rip_running", "post_rip"].includes(workflow.name);
     const key = startMode ? "action.start" : "action.scan";
     button.dataset.i18nTitle = key;
     button.title = t(key);
@@ -2676,6 +2921,19 @@
     } else {
       button.innerHTML =
         "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 2a8 8 0 0 1 7.75 6H4.25A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.75-6h15.5A8 8 0 0 1 12 20Zm0-5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z' fill='currentColor'/></svg>";
+    }
+  }
+
+  function setConfigurationEditingLocked(locked) {
+    document.body.classList.toggle("layout-locked", !!locked);
+    const controls = document.querySelectorAll(".layout input, .layout select, .layout textarea, .layout button");
+    controls.forEach((node) => {
+      node.disabled = !!locked;
+    });
+
+    if (!locked) {
+      initializeBinaryToggleRows();
+      applyModeVisibility();
     }
   }
 
@@ -2903,16 +3161,12 @@
     const overlay = el("settings-overlay");
     overlay.classList.remove("is-hidden");
     overlay.setAttribute("aria-hidden", "false");
-    document.body.classList.add("modal-open");
   }
 
   function closeSettingsModal() {
     const overlay = el("settings-overlay");
     overlay.classList.add("is-hidden");
     overlay.setAttribute("aria-hidden", "true");
-    if (el("directory-picker-overlay").classList.contains("is-hidden")) {
-      document.body.classList.remove("modal-open");
-    }
   }
 
   function loadPreferenceCookies() {
@@ -2983,6 +3237,13 @@
     }
     if (state.selectedDriveId && Array.from(el("device-select").options).some((item) => item.value === state.selectedDriveId)) {
       el("device-select").value = state.selectedDriveId;
+    }
+
+    if (parsed.settings && typeof parsed.settings === "object") {
+      applySettings({
+        ...state.settings,
+        ...parsed.settings,
+      });
     }
 
     setIfDefined("offset", parsed.offset);
@@ -3067,6 +3328,13 @@
     }
 
     const payload = {
+      settings: {
+        binary_path: state.settings.binary_path,
+        working_directory: state.settings.working_directory,
+        language: state.settings.language,
+        device_profiles: sanitizeDeviceProfiles(state.settings.device_profiles),
+        misc_offset: normalizeOptionalInt(state.settings.misc_offset) ?? 0,
+      },
       modes: {
         offset: state.modes.offset,
         device: state.modes.device,
@@ -3108,6 +3376,7 @@
 
     try {
       window.localStorage.setItem(UI_PREFS_KEY, JSON.stringify(payload));
+      persistRuntimeSettingsToStorage();
     } catch (_) {
       // Keep running even if browser storage is unavailable/full.
     }
@@ -3239,6 +3508,17 @@
     updateStatusPanel();
   }
 
+  function getLanguageOptionLabel(code) {
+    const key = normalizeLocale(code) || String(code || "").toLowerCase();
+    if (key === "de") {
+      return "🇩🇪 Deutsch / German";
+    }
+    if (key === "en") {
+      return "🇬🇧 English / English";
+    }
+    return String(code || "");
+  }
+
   function renderSettingsLanguageOptions() {
     const select = el("settings-language");
     select.innerHTML = "";
@@ -3246,7 +3526,7 @@
     AVAILABLE_LOCALES.forEach((code) => {
       const option = document.createElement("option");
       option.value = code;
-      option.textContent = code;
+      option.textContent = getLanguageOptionLabel(code);
       select.appendChild(option);
     });
   }
@@ -3358,37 +3638,39 @@
       const align = () => {
         node.classList.remove("tip-left", "tip-right", "tip-up");
         node.style.removeProperty("--tip-width");
+        node.style.removeProperty("--tip-left");
+        node.style.removeProperty("--tip-top");
         const rect = node.getBoundingClientRect();
-        const modalBody = node.closest("#settings-overlay .modal-body, #directory-picker-overlay .modal-body");
-
-        const bounds = modalBody
-          ? modalBody.getBoundingClientRect()
-          : { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
+        const bounds = { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
 
         const margin = 12;
         const maxWidthByBounds = Math.max(180, Math.floor((bounds.right - bounds.left) * 0.88));
         const tipWidth = Math.min(340, Math.round(window.innerWidth * 0.74), maxWidthByBounds);
         node.style.setProperty("--tip-width", `${tipWidth}px`);
 
-        const left = rect.left + rect.width / 2 - tipWidth / 2;
-        const right = rect.left + rect.width / 2 + tipWidth / 2;
-        if (left < bounds.left + margin) {
-          node.classList.add("tip-left");
-        } else if (right > bounds.right - margin) {
-          node.classList.add("tip-right");
-        }
+        const half = tipWidth / 2;
+        const anchorCenter = rect.left + rect.width / 2;
+        const minCenter = bounds.left + margin + half;
+        const maxCenter = bounds.right - margin - half;
+        const centered = clamp(anchorCenter, minCenter, maxCenter);
+        node.style.setProperty("--tip-left", `${centered}px`);
 
         const estimatedTipHeight = 170;
         const spaceBelow = bounds.bottom - rect.bottom;
         const spaceAbove = rect.top - bounds.top;
         if (spaceBelow < estimatedTipHeight && spaceAbove > spaceBelow) {
           node.classList.add("tip-up");
+          node.style.setProperty("--tip-top", `${Math.max(margin, rect.top - 8)}px`);
+          return;
         }
+        node.style.setProperty("--tip-top", `${Math.min(bounds.bottom - margin, rect.bottom + 8)}px`);
       };
 
       const clear = () => {
         node.classList.remove("tip-left", "tip-right", "tip-up");
         node.style.removeProperty("--tip-width");
+        node.style.removeProperty("--tip-left");
+        node.style.removeProperty("--tip-top");
       };
 
       node.addEventListener("mouseenter", align);
@@ -3439,7 +3721,7 @@
     const langSelect = el("settings-language");
     if (langSelect) {
       Array.from(langSelect.options).forEach((option) => {
-        option.textContent = t(`language.name.${option.value}`) || option.value;
+        option.textContent = getLanguageOptionLabel(option.value);
       });
       langSelect.value = state.locale;
     }
@@ -3580,6 +3862,24 @@
     return Number.isNaN(parsed) ? null : parsed;
   }
 
+  function sanitizeDeviceProfiles(value) {
+    if (!value || typeof value !== "object") {
+      return {};
+    }
+    const out = {};
+    Object.entries(value).forEach(([id, row]) => {
+      if (!row || typeof row !== "object") {
+        return;
+      }
+      const offset = normalizeOptionalInt(row.offset);
+      if (offset === null) {
+        return;
+      }
+      out[String(id)] = { offset };
+    });
+    return out;
+  }
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -3633,7 +3933,10 @@
 
     if (!response.ok) {
       const message = data && data.error ? data.error : `${response.status} ${response.statusText}`;
-      throw new Error(message);
+      const err = new Error(message);
+      err.payload = data;
+      err.status = response.status;
+      throw err;
     }
 
     return data;

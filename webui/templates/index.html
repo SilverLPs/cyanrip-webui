@@ -4,16 +4,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>cyanrip-webui</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
     <header class="hero">
       <div class="hero-main">
-        <p class="eyebrow" data-i18n="hero.eyebrow">Accurate audio CD extraction</p>
-        <h1>cyanrip-webui</h1>
-        <p class="subtitle" data-i18n="hero.subtitle">
-          Integrated rip workflow for cyanrip. Scan, review metadata, then rip with reliable session tracking.
-        </p>
+        <div class="hero-brand">
+          <img class="hero-logo" src="{{ url_for('static', filename='favicon.svg') }}" alt="cyanrip-webui logo" />
+          <div class="hero-brand-text">
+            <p class="eyebrow" data-i18n="hero.eyebrow">Accurate audio CD extraction</p>
+            <h1>cyanrip-webui</h1>
+            <p class="subtitle" data-i18n="hero.subtitle">
+              Integrated rip workflow for cyanrip. Scan, review metadata, then rip with reliable session tracking.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div class="hero-side">
@@ -103,6 +109,21 @@
             <span data-i18n="metadata.totalDiscs">Total discs</span>
             <input id="total-discs" type="number" min="1" />
           </label>
+        </div>
+
+        <div id="release-choice" class="release-choice is-hidden">
+          <p class="small-note" data-i18n="disc.releaseChoice.title">
+            Multiple releases were found for this disc. Select the correct release ID.
+          </p>
+          <div class="inline-row release-choice-row">
+            <select id="release-candidate-select"></select>
+            <button id="release-candidate-apply" type="button" data-i18n="disc.releaseChoice.apply">
+              Use release
+            </button>
+          </div>
+          <p class="small-note" data-i18n="disc.releaseChoice.note">
+            The selected release ID is copied to the Release field and the scan can be retried.
+          </p>
         </div>
 
         <div class="disc-summary-wrap">

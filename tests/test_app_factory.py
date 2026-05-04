@@ -5,7 +5,13 @@ from pathlib import Path
 APP_FACTORY_IMPORT_ERROR = None
 
 try:
-    from webui.app_factory import _list_directories, _resolve_directory_for_browse, _scan_config_from_user
+    from webui.app_factory import (
+        _extract_release_candidates,
+        _extract_release_options,
+        _list_directories,
+        _resolve_directory_for_browse,
+        _scan_config_from_user,
+    )
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional test env deps
     APP_FACTORY_IMPORT_ERROR = exc
 
@@ -73,6 +79,46 @@ class DirectoryBrowseTests(unittest.TestCase):
         self.assertTrue(cfg["disable_mb"])
         self.assertFalse(cfg["disable_accurip"])
         self.assertTrue(cfg["disable_coverart_db"])
+
+    def test_scan_config_keeps_release_id_for_disambiguation(self) -> None:
+        cfg = _scan_config_from_user({"release": "669ea5be-085c-406c-9cd8-4e1107cf0998"})
+        self.assertEqual(cfg["release"], "669ea5be-085c-406c-9cd8-4e1107cf0998")
+
+    def test_extract_release_candidates_from_multi_release_output(self) -> None:
+        sample = """
+Error: multiple releases were found for this disc id.
+Release ID: 669ea5be-085c-406c-9cd8-4e1107cf0998
+Release ID: a4124f8f-e8fb-4eb9-9b1f-b38a4f0055fd
+"""
+        candidates = _extract_release_candidates(sample)
+        self.assertEqual(
+            candidates,
+            [
+                "669ea5be-085c-406c-9cd8-4e1107cf0998",
+                "a4124f8f-e8fb-4eb9-9b1f-b38a4f0055fd",
+            ],
+        )
+
+    def test_extract_release_options_from_numbered_release_list(self) -> None:
+        sample = """
+Multiple releases found in database for DiscID xK0tLeZ7wIoD8OQdqNKITcnSNhE-:
+    1 (ID: d495d9cc-272c-4644-be7e-8e58098e6027): Eple (GB) (2001-07-23)
+    2 (ID: a2bd9b1c-58c4-3563-bc5d-989df771881f): Eple (XE) (2001)
+"""
+        options = _extract_release_options(sample)
+        self.assertEqual(
+            options,
+            [
+                {
+                    "id": "d495d9cc-272c-4644-be7e-8e58098e6027",
+                    "label": "Eple (GB) (2001-07-23) (d495d9cc-272c-4644-be7e-8e58098e6027)",
+                },
+                {
+                    "id": "a2bd9b1c-58c4-3563-bc5d-989df771881f",
+                    "label": "Eple (XE) (2001) (a2bd9b1c-58c4-3563-bc5d-989df771881f)",
+                },
+            ],
+        )
 
 
 if __name__ == "__main__":

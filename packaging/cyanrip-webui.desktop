@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=cyanrip-webui
+Comment=Integrated Web UI for cyanrip
+Exec=cyanrip-webui
+Icon=cyanrip-webui
+Terminal=false
+Categories=AudioVideo;Audio;Utility;

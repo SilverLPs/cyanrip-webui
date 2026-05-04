@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import copy
 import io
+import json
 import mimetypes
 import os
+import re
 import subprocess
 import threading
 import time
@@ -17,6 +19,11 @@ from urllib.request import Request, urlopen
 
 from flask import Flask, jsonify, render_template, request, send_file
 
+try:
+    from flask_sock import Sock
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    Sock = None
+
 from .command_builder import (
     COVERART_LOOKUP_SIZES,
     DEFAULT_CONFIG,
@@ -29,21 +36,41 @@ from .command_builder import (
 from .device_probe import list_optical_drives
 from .runner import CyanripJobRunner
 from .scan_parser import parse_scan_output
-from .settings_store import SettingsStore
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_WORKING_DIRECTORY = PROJECT_ROOT / "output"
-SETTINGS_PATH = DEFAULT_WORKING_DIRECTORY / ".cyanrip-webui-settings.json"
-MISC_OFFSET_PROFILE_ID = "__misc__"
+DEFAULT_BINARY_PATH = "./bin/cyanrip"
+DEFAULT_UI_SETTINGS: dict[str, Any] = {
+    "binary_path": DEFAULT_BINARY_PATH,
+    "working_directory": "./output",
+    "language": "en",
+    "device_profiles": {},
+    "misc_offset": 0,
+}
 COVER_CACHE_TTL_SECONDS = 900
 COVER_CACHE_MAX_ITEMS = 12
 COVER_FETCH_MAX_BYTES = 8 * 1024 * 1024
+_RIP_PROGRESS_LINE_RE = re.compile(
+    r"^Ripping(?:\s+and\s+encoding)?\s+track\s+\d+,\s+progress\s+-\s+[0-9]+(?:\.[0-9]+)?%",
+    re.IGNORECASE,
+)
+_MB_RELEASE_ID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE)
+_MB_RELEASE_OPTION_RE = re.compile(
+    r"^\s*\d+\s+\(ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*:\s*(.+?)\s*$",
+    re.IGNORECASE,
+)
+_MULTI_RELEASE_HINT_RE = re.compile(
+    r"(multiple\s+releases?|mehrere\s+releases?|release\s+id|musicbrainz)",
+    re.IGNORECASE,
+)
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    if Sock is not None:
+        app.config["SOCK_SERVER_OPTIONS"] = {"ping_interval": 25}
+    sock = Sock(app) if Sock is not None else None
     runner = CyanripJobRunner()
-    settings_store = SettingsStore(SETTINGS_PATH)
     state_lock = threading.RLock()
     cover_cache: dict[str, dict[str, Any]] = {}
 
@@ -56,7 +83,7 @@ def create_app() -> Flask:
         "scan_updated_at": None,
         "binary_probe": {
             "ok": False,
-            "binary_path": settings_store.read().get("binary_path", "./bin/cyanrip"),
+            "binary_path": DEFAULT_UI_SETTINGS["binary_path"],
             "version": "",
             "returncode": None,
             "error": "not_checked",
@@ -72,11 +99,66 @@ def create_app() -> Flask:
         "last_shell_command": "",
     }
 
-    _refresh_binary_probe(ui_state, state_lock, settings_store.read().get("binary_path", "./bin/cyanrip"))
+    _refresh_binary_probe(ui_state, state_lock, DEFAULT_UI_SETTINGS["binary_path"])
+
+    def status_payload() -> dict[str, Any]:
+        snap = runner.snapshot()
+        with state_lock:
+            scan_process = scan_runtime.get("process")
+            if scan_process is not None and scan_process.poll() is not None:
+                scan_runtime["process"] = None
+                scan_process = None
+
+            scan_active = scan_process is not None and scan_process.poll() is None
+            current_phase = str(ui_state.get("phase") or "")
+
+            if scan_active:
+                ui_state["phase"] = "scanning"
+            elif snap.get("is_running"):
+                ui_state["phase"] = "ripping"
+            else:
+                runner_state = str(snap.get("state") or "")
+
+                if current_phase in {"idle", "scanned", "scan_required", "scan_error"}:
+                    if current_phase == "idle":
+                        ui_state["phase"] = "idle"
+                    elif current_phase in {"scanned", "scan_required", "scan_error"}:
+                        ui_state["phase"] = current_phase
+                elif runner_state == "finished":
+                    ui_state["phase"] = "finished"
+                elif runner_state == "failed":
+                    ui_state["phase"] = "failed"
+                elif runner_state == "stopped":
+                    if current_phase in {"ripping", "finished", "failed", "stopped"}:
+                        ui_state["phase"] = "stopped"
+                    elif ui_state.get("scan_signature"):
+                        ui_state["phase"] = "scanned"
+                    else:
+                        ui_state["phase"] = "idle"
+                elif ui_state.get("scan_signature"):
+                    ui_state["phase"] = "scanned"
+                else:
+                    ui_state["phase"] = "idle"
+
+            phase = str(ui_state.get("phase") or "")
+            log_source = _determine_log_source(phase=phase, scan_active=scan_active, runner_snapshot=snap)
+            if log_source == "scan":
+                log_meta = _scan_logs_snapshot(scan_runtime=scan_runtime, since=None)
+                last_shell = str(scan_runtime.get("last_shell_command") or "")
+            else:
+                log_meta = runner.logs(since=None)
+                last_shell = str(snap.get("shell_command") or "")
+
+        enriched = _enrich_snapshot(snap, ui_state, state_lock)
+        enriched["log_source"] = log_source
+        enriched["log_next_index"] = log_meta.get("next_index")
+        enriched["log_oldest_index"] = log_meta.get("oldest_index")
+        if last_shell:
+            enriched["active_shell_command"] = last_shell
+        return enriched
 
     @app.get("/")
     def index() -> str:
-        settings = settings_store.read()
         return render_template(
             "index.html",
             default_config=DEFAULT_CONFIG,
@@ -84,17 +166,17 @@ def create_app() -> Flask:
             sanitation_modes=SANITATION_MODES,
             pregap_actions=PREGAP_ACTIONS,
             coverart_lookup_sizes=COVERART_LOOKUP_SIZES,
-            default_working_directory=settings.get("working_directory") or "./output",
-            initial_settings=settings,
+            default_working_directory=DEFAULT_UI_SETTINGS["working_directory"],
+            initial_settings=DEFAULT_UI_SETTINGS,
         )
 
     @app.get("/api/settings")
     def get_settings() -> Any:
-        settings = settings_store.read()
         return jsonify(
             {
-                "settings": settings,
+                "settings": copy.deepcopy(DEFAULT_UI_SETTINGS),
                 "binary": _binary_probe_snapshot(ui_state, state_lock),
+                "websocket_available": bool(sock is not None),
             }
         )
 
@@ -102,30 +184,21 @@ def create_app() -> Flask:
     def update_settings() -> Any:
         payload = _json_payload()
         raw_settings = payload.get("settings") if isinstance(payload.get("settings"), dict) else payload
-
-        patch = {
-            "binary_path": raw_settings.get("binary_path"),
-            "working_directory": raw_settings.get("working_directory"),
-            "language": raw_settings.get("language"),
-        }
-
-        cleaned_patch = {k: v for k, v in patch.items() if v is not None}
-        settings = settings_store.update(cleaned_patch)
-
-        _refresh_binary_probe(ui_state, state_lock, settings.get("binary_path") or "")
+        settings = _effective_settings(raw_settings if isinstance(raw_settings, dict) else {})
+        _refresh_binary_probe(ui_state, state_lock, settings.get("binary_path") or DEFAULT_BINARY_PATH)
 
         return jsonify(
             {
                 "settings": settings,
                 "binary": _binary_probe_snapshot(ui_state, state_lock),
+                "persisted": False,
             }
         )
 
     @app.post("/api/probe")
     def probe() -> Any:
         payload = _json_payload()
-        settings = settings_store.read()
-        raw_binary = str(payload.get("binary_path") or settings.get("binary_path") or "").strip()
+        raw_binary = str(payload.get("binary_path") or DEFAULT_UI_SETTINGS["binary_path"] or "").strip()
 
         probe = _probe_binary_version(raw_binary)
 
@@ -151,14 +224,29 @@ def create_app() -> Flask:
 
     @app.get("/api/drives")
     def drives() -> Any:
-        settings = settings_store.read()
-        drives_list = list_optical_drives(settings.get("device_profiles"))
+        profile_map = _read_profile_map_from_request()
+        drives_list = list_optical_drives(profile_map)
         return jsonify({"drives": drives_list})
 
     @app.get("/api/cover")
     def cover_preview() -> Any:
         raw_url = str(request.args.get("url", default="") or "").strip()
         raw_path = str(request.args.get("path", default="") or "").strip()
+        raw_release_id = str(request.args.get("release_id", default="") or "").strip().lower()
+
+        if not raw_url and raw_path and raw_path.lower().startswith(("http://", "https://")):
+            raw_url = raw_path
+            raw_path = ""
+
+        if (
+            not raw_url
+            and raw_path
+            and raw_release_id
+            and _MB_RELEASE_ID_RE.search(raw_release_id)
+            and "cover art db" in raw_path.lower()
+        ):
+            raw_url = f"https://coverartarchive.org/release/{raw_release_id}/front"
+            raw_path = ""
 
         if raw_url:
             try:
@@ -198,27 +286,29 @@ def create_app() -> Flask:
         if not device_id:
             return jsonify({"error": "device_id fehlt."}), 400
 
+        profile_map = _coerce_device_profiles(payload.get("device_profiles"))
+        misc_offset = _parse_optional_int(payload.get("misc_offset"), fallback=0)
         offset_raw = payload.get("offset")
-        if device_id == MISC_OFFSET_PROFILE_ID:
-            if offset_raw in (None, ""):
-                settings = settings_store.update({"misc_offset": 0})
-            else:
-                try:
-                    offset = int(str(offset_raw).strip())
-                except (TypeError, ValueError):
-                    return jsonify({"error": "Offset muss eine Ganzzahl sein."}), 400
-                settings = settings_store.update({"misc_offset": offset})
+
+        if device_id == "__misc__":
+            misc_offset = 0 if offset_raw in (None, "") else _parse_optional_int(offset_raw, fallback=0)
         elif offset_raw in (None, ""):
-            settings = settings_store.update_device_offset(device_id, None)
+            profile_map.pop(device_id, None)
         else:
             try:
                 offset = int(str(offset_raw).strip())
             except (TypeError, ValueError):
                 return jsonify({"error": "Offset muss eine Ganzzahl sein."}), 400
-            settings = settings_store.update_device_offset(device_id, offset)
+            profile_map[device_id] = {"offset": offset}
 
+        settings = _effective_settings(
+            {
+                "device_profiles": profile_map,
+                "misc_offset": misc_offset,
+            }
+        )
         drives_list = list_optical_drives(settings.get("device_profiles"))
-        return jsonify({"settings": settings, "drives": drives_list})
+        return jsonify({"settings": settings, "drives": drives_list, "persisted": False})
 
     @app.post("/api/session/reset")
     def reset_session() -> Any:
@@ -227,6 +317,7 @@ def create_app() -> Flask:
         if runner.snapshot().get("is_running") or (scan_process is not None and scan_process.poll() is None):
             return jsonify({"error": "Ein Scan- oder Rip-Job laeuft. Bitte zuerst stoppen."}), 409
 
+        runner.reset_runtime_state()
         runner.update_scan_result({}, [], returncode=0)
 
         with state_lock:
@@ -243,8 +334,7 @@ def create_app() -> Flask:
     @app.post("/api/preview")
     def preview() -> Any:
         payload = _json_payload()
-        settings = settings_store.read()
-        binary_path_raw = str(payload.get("binary_path") or settings.get("binary_path") or "").strip()
+        binary_path_raw = str(payload.get("binary_path") or DEFAULT_UI_SETTINGS["binary_path"] or "").strip()
         config = payload.get("config") or {}
         mode = str(payload.get("mode") or "rip").strip().lower()
 
@@ -278,10 +368,8 @@ def create_app() -> Flask:
             ui_state["scan_updated_at"] = _now_iso()
 
         payload = _json_payload()
-        settings = settings_store.read()
-
-        binary_path_raw = str(payload.get("binary_path") or settings.get("binary_path") or "").strip()
-        working_directory_raw = str(payload.get("working_directory") or settings.get("working_directory") or "").strip()
+        binary_path_raw = str(payload.get("binary_path") or DEFAULT_UI_SETTINGS["binary_path"] or "").strip()
+        working_directory_raw = str(payload.get("working_directory") or DEFAULT_UI_SETTINGS["working_directory"] or "").strip()
         config = payload.get("config") or {}
 
         try:
@@ -328,7 +416,7 @@ def create_app() -> Flask:
                 ui_state["phase"] = "idle"
             else:
                 previous = ui_state.get("scan_signature")
-                if signature and signature != previous:
+                if signature and previous and signature != previous:
                     ui_state["session_id"] = _new_session_id()
 
                 if returncode == 0 and not scan_result.get("error"):
@@ -352,6 +440,10 @@ def create_app() -> Flask:
             "output_lines": scan_result.get("output_lines") or 0,
             "output_preview": scan_result.get("output_preview") or "",
         }
+        if scan_result.get("release_candidates"):
+            payload_out["release_candidates"] = scan_result.get("release_candidates")
+            payload_out["release_options"] = scan_result.get("release_options") or []
+            payload_out["error_kind"] = "release_selection_required"
 
         if scan_was_cancelled:
             payload_out["error"] = "CD-Scan wurde abgebrochen."
@@ -359,6 +451,8 @@ def create_app() -> Flask:
 
         if returncode != 0:
             payload_out["error"] = scan_result.get("error") or f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
+            if payload_out.get("error_kind") == "release_selection_required":
+                return jsonify(payload_out), 409
             return jsonify(payload_out), 422
 
         return jsonify(payload_out), 200
@@ -366,9 +460,8 @@ def create_app() -> Flask:
     @app.post("/api/start")
     def start() -> Any:
         payload = _json_payload()
-        settings = settings_store.read()
-        binary_path_raw = str(payload.get("binary_path") or settings.get("binary_path") or "").strip()
-        working_directory_raw = str(payload.get("working_directory") or settings.get("working_directory") or "").strip()
+        binary_path_raw = str(payload.get("binary_path") or DEFAULT_UI_SETTINGS["binary_path"] or "").strip()
+        working_directory_raw = str(payload.get("working_directory") or DEFAULT_UI_SETTINGS["working_directory"] or "").strip()
         config = payload.get("config") or {}
 
         with state_lock:
@@ -495,8 +588,8 @@ def create_app() -> Flask:
         device_path = str(payload.get("device_path", "")).strip()
 
         if not device_path:
-            settings = settings_store.read()
-            detected = list_optical_drives(settings.get("device_profiles"))
+            profile_map = _coerce_device_profiles(payload.get("device_profiles"))
+            detected = list_optical_drives(profile_map)
             if len(detected) == 1:
                 device_path = str(detected[0].get("path") or "").strip()
             elif len(detected) > 1:
@@ -550,54 +643,29 @@ def create_app() -> Flask:
 
     @app.get("/api/status")
     def status() -> Any:
-        snap = runner.snapshot()
-        with state_lock:
-            scan_process = scan_runtime.get("process")
-            if scan_process is not None and scan_process.poll() is not None:
-                scan_runtime["process"] = None
-                scan_process = None
-            scan_active = scan_process is not None and scan_process.poll() is None
-            if scan_active:
-                ui_state["phase"] = "scanning"
-            elif snap.get("is_running"):
-                ui_state["phase"] = "ripping"
-            else:
-                runner_state = str(snap.get("state") or "")
-                current_phase = str(ui_state.get("phase") or "")
-                if current_phase in {"scan_required", "scanned", "scan_error"}:
-                    ui_state["phase"] = current_phase
-                elif runner_state == "finished":
-                    ui_state["phase"] = "finished"
-                elif runner_state == "failed":
-                    ui_state["phase"] = "failed"
-                elif runner_state == "stopped":
-                    if current_phase in {"ripping", "finished", "failed", "stopped"}:
-                        ui_state["phase"] = "stopped"
-                    elif ui_state.get("scan_signature"):
-                        ui_state["phase"] = "scanned"
-                    else:
-                        ui_state["phase"] = "idle"
-                elif ui_state.get("scan_signature"):
-                    ui_state["phase"] = "scanned"
-                else:
-                    ui_state["phase"] = "idle"
+        since_raw = request.args.get("since", default=None)
+        source_expected = str(request.args.get("source", default="auto") or "auto").strip().lower()
+        since: int | None = None
+        if since_raw is not None:
+            try:
+                since = int(since_raw)
+            except ValueError:
+                return jsonify({"error": "Query-Parameter 'since' muss eine Zahl sein."}), 400
 
-            phase = str(ui_state.get("phase") or "")
-            log_source = _determine_log_source(phase=phase, scan_active=scan_active, runner_snapshot=snap)
-            if log_source == "scan":
-                log_meta = _scan_logs_snapshot(scan_runtime=scan_runtime, since=None)
-                last_shell = str(scan_runtime.get("last_shell_command") or "")
-            else:
-                log_meta = runner.logs(since=None)
-                last_shell = str(snap.get("shell_command") or "")
+        payload = status_payload()
+        source = str(payload.get("log_source") or "scan")
+        if source_expected in {"scan", "rip"} and source_expected != source:
+            since = None
+        if source == "scan":
+            with state_lock:
+                logs_meta = _scan_logs_snapshot(scan_runtime=scan_runtime, since=since)
+        else:
+            logs_meta = runner.logs(since=since)
 
-        enriched = _enrich_snapshot(snap, ui_state, state_lock)
-        enriched["log_source"] = log_source
-        enriched["log_next_index"] = log_meta.get("next_index")
-        enriched["log_oldest_index"] = log_meta.get("oldest_index")
-        if last_shell:
-            enriched["active_shell_command"] = last_shell
-        return jsonify(enriched)
+        payload["logs"] = logs_meta.get("lines") or []
+        payload["log_next_index"] = logs_meta.get("next_index")
+        payload["log_oldest_index"] = logs_meta.get("oldest_index")
+        return jsonify(payload)
 
     @app.get("/api/logs")
     def logs() -> Any:
@@ -631,6 +699,41 @@ def create_app() -> Flask:
             with state_lock:
                 return jsonify(_scan_logs_snapshot(scan_runtime=scan_runtime, since=since))
         return jsonify(runner.logs(since=since))
+
+    if sock is not None:
+        @sock.route("/ws/status")
+        def ws_status(ws: Any) -> None:
+            scan_next_index: int | None = None
+            rip_next_index: int | None = None
+
+            try:
+                while True:
+                    payload = status_payload()
+                    source = str(payload.get("log_source") or "scan")
+
+                    if source == "scan":
+                        since = scan_next_index if scan_next_index is not None else payload.get("log_oldest_index")
+                        with state_lock:
+                            logs_meta = _scan_logs_snapshot(scan_runtime=scan_runtime, since=since)
+                        scan_next_index = int(logs_meta.get("next_index") or 0)
+                    else:
+                        since = rip_next_index if rip_next_index is not None else payload.get("log_oldest_index")
+                        logs_meta = runner.logs(since=since)
+                        rip_next_index = int(logs_meta.get("next_index") or 0)
+
+                    ws.send(
+                        json.dumps(
+                            {
+                                "type": "status",
+                                "status": payload,
+                                "logs": logs_meta.get("lines") or [],
+                            },
+                            ensure_ascii=True,
+                        )
+                    )
+                    time.sleep(0.75)
+            except (ConnectionError, OSError):
+                return
 
     return app
 
@@ -776,6 +879,8 @@ def _append_scan_runtime_output(
         lines = scan_runtime.setdefault("log_lines", [])
         next_idx = int(scan_runtime.get("log_next_index") or 0)
         for row in rows:
+            if _is_noisy_progress_line(row):
+                continue
             lines.append({"index": next_idx, "line": row})
             next_idx += 1
         if len(lines) > 6000:
@@ -897,13 +1002,16 @@ def _run_disc_scan(
 
     normalized_output = _normalize_output("".join(output_chunks))
     parsed = parse_scan_output(normalized_output)
+    release_candidates = _extract_release_candidates(normalized_output)
+    release_options = _extract_release_options(normalized_output)
 
     cancelled = cancel_requested or returncode in (-15, -9, 143, 137)
-    error_message = None
-    if cancelled:
-        error_message = "CD-Scan wurde abgebrochen."
-    elif returncode != 0:
-        error_message = f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
+    error_message = _build_scan_error_message(
+        cancelled=cancelled,
+        returncode=returncode,
+        raw_output=normalized_output,
+        release_candidates=release_candidates,
+    )
 
     return {
         "returncode": returncode,
@@ -914,6 +1022,8 @@ def _run_disc_scan(
         "output_preview": "\n".join(normalized_output.splitlines()[:120]),
         "error": error_message,
         "cancelled": cancelled,
+        "release_candidates": release_candidates,
+        "release_options": release_options,
     }
 
 
@@ -940,7 +1050,7 @@ def _scan_config_from_user(config: dict[str, Any]) -> dict[str, Any]:
         "cue_scheme": "",
         "album_metadata": "",
         "track_metadata": [],
-        "release": "",
+        "release": str(user_config.get("release") or "").strip(),
         "disc_number": None,
         "total_discs": None,
         "cover_arts": [],
@@ -958,6 +1068,147 @@ def _scan_config_from_user(config: dict[str, Any]) -> dict[str, Any]:
         "sanitation": None,
     }
     return scan_config
+
+
+def _extract_release_candidates(raw_output: str) -> list[str]:
+    text = str(raw_output or "")
+    lines = text.splitlines()
+    has_hint = any(_MULTI_RELEASE_HINT_RE.search(line) for line in lines)
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    def add_candidate(value: str) -> None:
+        normalized = str(value or "").strip().lower()
+        if not normalized or normalized in seen:
+            return
+        seen.add(normalized)
+        candidates.append(normalized)
+
+    for line in lines:
+        if not (_MULTI_RELEASE_HINT_RE.search(line) or _MB_RELEASE_ID_RE.search(line)):
+            continue
+        for match in _MB_RELEASE_ID_RE.findall(line):
+            add_candidate(match)
+
+    if candidates:
+        return candidates
+
+    if not has_hint:
+        return []
+
+    for match in _MB_RELEASE_ID_RE.findall(text):
+        add_candidate(match)
+    return candidates
+
+
+def _extract_release_options(raw_output: str) -> list[dict[str, str]]:
+    text = str(raw_output or "")
+    out: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+
+    for raw_line in text.splitlines():
+        match = _MB_RELEASE_OPTION_RE.match(raw_line)
+        if not match:
+            continue
+        release_id = str(match.group(1) or "").strip().lower()
+        description = str(match.group(2) or "").strip()
+        if not release_id or release_id in seen_ids:
+            continue
+        seen_ids.add(release_id)
+        out.append(
+            {
+                "id": release_id,
+                "label": f"{description} ({release_id})" if description else release_id,
+            }
+        )
+    return out
+
+
+def _build_scan_error_message(
+    *,
+    cancelled: bool,
+    returncode: int,
+    raw_output: str,
+    release_candidates: list[str],
+) -> str | None:
+    if cancelled:
+        return "CD-Scan wurde abgebrochen."
+    if returncode == 0:
+        return None
+    if release_candidates:
+        return (
+            "Mehrere Releases fuer diese Disc-ID gefunden. "
+            "Bitte eine Release-ID auswaehlen und den Scan erneut starten."
+        )
+
+    lines = [line.strip() for line in str(raw_output or "").splitlines() if line.strip()]
+    for line in reversed(lines[-40:]):
+        lowered = line.lower()
+        if lowered.startswith("error") or "fehl" in lowered:
+            return line
+
+    return f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
+
+
+def _effective_settings(raw_settings: dict[str, Any] | None) -> dict[str, Any]:
+    raw = raw_settings if isinstance(raw_settings, dict) else {}
+    merged = copy.deepcopy(DEFAULT_UI_SETTINGS)
+
+    binary_path = str(raw.get("binary_path") or "").strip()
+    if binary_path:
+        merged["binary_path"] = binary_path
+
+    workdir = str(raw.get("working_directory") or "").strip()
+    if workdir:
+        merged["working_directory"] = workdir
+
+    language = str(raw.get("language") or "").strip().lower()
+    if language in {"en", "de"}:
+        merged["language"] = language
+
+    merged["misc_offset"] = _parse_optional_int(raw.get("misc_offset"), fallback=0)
+    merged["device_profiles"] = _coerce_device_profiles(raw.get("device_profiles"))
+    return merged
+
+
+def _coerce_device_profiles(value: Any) -> dict[str, dict[str, int]]:
+    if not isinstance(value, dict):
+        return {}
+    out: dict[str, dict[str, int]] = {}
+    for raw_key, raw_payload in value.items():
+        key = str(raw_key or "").strip()
+        if not key or not isinstance(raw_payload, dict):
+            continue
+        offset_value = raw_payload.get("offset")
+        if offset_value in (None, ""):
+            continue
+        try:
+            offset = int(str(offset_value).strip())
+        except (TypeError, ValueError):
+            continue
+        out[key] = {"offset": offset}
+    return out
+
+
+def _parse_optional_int(value: Any, *, fallback: int) -> int:
+    if value in (None, ""):
+        return fallback
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _read_profile_map_from_request() -> dict[str, dict[str, int]]:
+    raw_profiles = request.args.get("profiles", default="", type=str).strip()
+    if not raw_profiles:
+        return {}
+    try:
+        payload = json.loads(raw_profiles)
+    except json.JSONDecodeError:
+        return {}
+    return _coerce_device_profiles(payload)
 
 
 def _disc_signature(disc: dict[str, Any]) -> str:
@@ -998,6 +1249,13 @@ def _json_payload() -> dict[str, Any]:
 def _normalize_output(raw_output: str) -> str:
     # cyanrip writes progress updates with carriage returns; normalize those for parsing/UI.
     return raw_output.replace("\r", "\n")
+
+
+def _is_noisy_progress_line(line: str) -> bool:
+    text = str(line or "").strip()
+    if not text:
+        return True
+    return bool(_RIP_PROGRESS_LINE_RE.match(text))
 
 
 def _build_process_env() -> dict[str, str]:

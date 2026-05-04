@@ -91,6 +91,11 @@
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
     },
+    "releaseChoice": {
+      "title": "Fuer diese Disc wurden mehrere Releases gefunden. Bitte die richtige Release-ID auswaehlen.",
+      "apply": "Release uebernehmen und neu scannen",
+      "note": "Die gewaehlte Release-ID wird ins Release-Feld uebernommen und der Scan erneut gestartet."
+    },
     "unknownAlbum": "Unbekanntes Album",
     "unknownArtist": "Unbekannter Artist"
   },
