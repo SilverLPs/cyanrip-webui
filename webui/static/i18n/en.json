@@ -231,7 +231,8 @@
     "queued": "Queued",
     "running": "Ripping",
     "done": "Done",
-    "error": "Error"
+    "error": "Error",
+    "aborted": "Aborted"
   },
   "hint": {
     "settingsLanguage": "Sets the interface language for all labels, hints, and status texts. This changes only the WebUI and does not affect file metadata. App default is English (en). The value is stored globally in settings.",

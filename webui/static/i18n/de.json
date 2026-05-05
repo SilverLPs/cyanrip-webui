@@ -231,7 +231,8 @@
     "queued": "Wartend",
     "running": "Rippen",
     "done": "Fertig",
-    "error": "Fehler"
+    "error": "Fehler",
+    "aborted": "Abgebrochen"
   },
   "hint": {
     "settingsLanguage": "Legt die Sprache der Oberfläche für Labels, Hinweise und Statusmeldungen fest. Diese Einstellung betrifft nur die WebUI und nicht die Audio-Metadaten. Standard ist Englisch (en). Der Wert wird global in den Einstellungen gespeichert.",

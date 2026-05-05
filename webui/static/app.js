@@ -51,6 +51,7 @@
       misc_offset: 0,
     },
     websocketAvailable: false,
+    websocketError: "",
 
     binaryProbe: null,
     drives: [],
@@ -64,6 +65,7 @@
     },
 
     scanInProgress: false,
+    ripStartPending: false,
     runnerStatus: null,
     advancedVisible: false,
     advancedHeight: ADVANCED_DEFAULT_HEIGHT,
@@ -134,6 +136,10 @@
   ];
   const SCHEME_TOKEN_SET = new Set(SCHEME_TOKENS.map((item) => item.token));
   const SCHEME_TOKEN_MAP = new Map(SCHEME_TOKENS.map((item) => [item.token, item]));
+  const RELEASE_ID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+  const RELEASE_OPTION_LINE_RE =
+    /^\s*\d+\s*\(ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*:\s*(.+?)\s*$/i;
+  const RELEASE_HINT_RE = /(multiple\s+releases?|mehrere\s+releases?|release\s+id|musicbrainz)/i;
   const DISC_COVER_PLACEHOLDER =
     "data:image/svg+xml;utf8," +
     encodeURIComponent(
@@ -505,6 +511,10 @@
       const backendDefaults = response.settings || {};
       const binary = response.binary || null;
       state.websocketAvailable = !!response.websocket_available;
+      state.websocketError = String(response.websocket_error || "");
+      if (!state.websocketAvailable && state.websocketError) {
+        console.warn(`WebSocket disabled: ${state.websocketError}`);
+      }
 
       const merged = {
         ...backendDefaults,
@@ -520,8 +530,9 @@
         await checkBinaryFromSettings();
       }
     } catch (error) {
-      showError(error.message);
+      showError(error);
       state.websocketAvailable = false;
+      state.websocketError = String(error.message || "");
       applySettings(state.settings || initialSettings || {});
     }
   }
@@ -582,7 +593,7 @@
       refreshPreview();
       await checkBinaryFromSettings();
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -596,7 +607,7 @@
       state.binaryProbe = probe;
       renderBinaryStatus();
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -660,7 +671,7 @@
         await navigateDirectoryPicker(response.parent);
       }
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -676,7 +687,7 @@
       state.directoryPicker.projectRootPath = response.project_root || state.directoryPicker.projectRootPath;
       renderDirectoryPicker(response);
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -762,7 +773,7 @@
       applyOffsetForCurrentDeviceMode(false);
       saveUiPreferencesDebounced();
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -893,7 +904,7 @@
       setMessage("action-message", t("message.backToScan"));
       refreshPreview();
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -909,6 +920,7 @@
   async function scanDisc() {
     clearError();
     state.scanInProgress = true;
+    state.ripStartPending = false;
     updateStatusPanel();
 
     try {
@@ -925,7 +937,18 @@
       updateDiscMetaDirtyIndicators();
       setMessage("action-message", t("message.scanDone"));
     } catch (error) {
+      const payload = error && typeof error === "object" ? error.payload : null;
       const releaseCandidates = extractReleaseCandidatesFromError(error);
+      if (payload && payload.session) {
+        applySessionSnapshot(payload.session);
+      } else if (releaseCandidates.length > 0) {
+        applySessionSnapshot({
+          id: state.session.id,
+          phase: "scan_error",
+          scan_signature: state.session.scan_signature,
+          scan_updated_at: state.session.scan_updated_at,
+        });
+      }
       if (releaseCandidates.length > 0) {
         showReleaseCandidates(releaseCandidates);
       }
@@ -934,7 +957,7 @@
         clearError();
         setMessage("action-message", t("message.scanStopped"));
       } else {
-        showError(error.message);
+        showError(error);
         setMessage("action-message", "");
       }
     } finally {
@@ -951,11 +974,20 @@
       return;
     }
 
-    const payload = {
-      binary_path: state.settings.binary_path,
-      working_directory: effectiveWorkingDirectoryForRip(),
-      config: collectConfig(),
-    };
+    let payload = null;
+    try {
+      payload = {
+        binary_path: state.settings.binary_path,
+        working_directory: effectiveWorkingDirectoryForRip(),
+        config: collectConfig(),
+      };
+    } catch (error) {
+      showError(error);
+      return;
+    }
+
+    state.ripStartPending = true;
+    updateStatusPanel();
 
     try {
       const snapshot = await apiPost("/api/start", payload);
@@ -963,15 +995,18 @@
       setMessage("action-message", t("message.ripStarted"));
       await refreshStatusAndLogs();
     } catch (error) {
-      showError(error.message);
+      showError(error);
       setMessage("action-message", "");
+    } finally {
+      state.ripStartPending = false;
+      updateStatusPanel();
     }
   }
 
   async function stopJob() {
     clearError();
     const wasScanning = !!state.scanInProgress;
-    const wasRipping = !!(state.runnerStatus && state.runnerStatus.is_running);
+    const wasRipping = !!state.ripStartPending || !!(state.runnerStatus && state.runnerStatus.is_running);
 
     try {
       const snapshot = await apiPost("/api/stop", {});
@@ -985,7 +1020,7 @@
         setMessage("action-message", "");
       }
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -1010,7 +1045,7 @@
       }
       setMessage("action-message", lines.filter(Boolean).join("\n"));
     } catch (error) {
-      showError(error.message);
+      showError(error);
       setMessage("action-message", "");
     }
   }
@@ -1046,7 +1081,11 @@
   }
 
   function startStatusStream() {
-    connectStatusWebSocket();
+    if (state.websocketAvailable) {
+      connectStatusWebSocket();
+      return;
+    }
+    startStatusPolling();
   }
 
   function startStatusPolling() {
@@ -1066,6 +1105,10 @@
   }
 
   function connectStatusWebSocket() {
+    if (!state.websocketAvailable) {
+      startStatusPolling();
+      return;
+    }
     if (state.ws) {
       return;
     }
@@ -1110,14 +1153,15 @@
       if (state.ws === socket) {
         state.ws = null;
       }
-      if (state.websocketAvailable) {
-        state.websocketAvailable = false;
-      }
       scheduleStatusReconnect();
     });
   }
 
   function scheduleStatusReconnect() {
+    if (!state.websocketAvailable) {
+      startStatusPolling();
+      return;
+    }
     if (state.wsReconnectTimer !== null) {
       return;
     }
@@ -1152,7 +1196,7 @@
       }
       applyStatusAndLogs(status, status.logs || []);
     } catch (error) {
-      showError(error.message);
+      showError(error);
     }
   }
 
@@ -1177,6 +1221,9 @@
     state.runnerStatus = status;
     const phaseRaw = String((status && status.session && status.session.phase) || "");
     state.scanInProgress = phaseRaw === "scanning" ? true : state.scanInProgress;
+    if (phaseRaw === "ripping" || (status && status.is_running)) {
+      state.ripStartPending = false;
+    }
 
     if (status.job_id !== state.currentJobId) {
       state.currentJobId = status.job_id;
@@ -1336,9 +1383,16 @@
 
   function extractReleaseCandidatesFromError(error) {
     const payload = error && typeof error === "object" ? error.payload : null;
-    if (!payload || payload.error_kind !== "release_selection_required") {
+    const message = String((error && error.message) || "");
+    const outputPreview = String((payload && payload.output_preview) || "");
+    const outputSnippet = String((payload && payload.output_snippet) || "");
+    const sourceText = `${outputPreview}\n${outputSnippet}\n${message}`;
+    const hasHint = RELEASE_HINT_RE.test(sourceText);
+
+    if (!payload || (payload.error_kind !== "release_selection_required" && !hasHint)) {
       return [];
     }
+
     const richOptions = Array.isArray(payload.release_options) ? payload.release_options : [];
     const normalizedOptions = richOptions
       .map((entry) => {
@@ -1357,13 +1411,53 @@
       return normalizedOptions;
     }
 
-    if (!Array.isArray(payload.release_candidates)) {
-      return [];
+    const parsedFromText = parseReleaseOptionsFromText(sourceText);
+    if (parsedFromText.length > 0) {
+      return parsedFromText;
     }
-    return payload.release_candidates
-      .map((item) => String(item || "").trim())
-      .filter((item) => item.length > 0)
-      .map((id) => ({ id, label: id }));
+
+    const candidates = Array.isArray(payload.release_candidates)
+      ? payload.release_candidates.map((item) => String(item || "").trim()).filter((item) => item.length > 0)
+      : parseReleaseIdsFromText(sourceText);
+    return candidates.map((id) => ({ id, label: id }));
+  }
+
+  function parseReleaseOptionsFromText(text) {
+    const out = [];
+    const seen = new Set();
+    const lines = String(text || "").split(/\r?\n/);
+    lines.forEach((line) => {
+      const match = RELEASE_OPTION_LINE_RE.exec(line);
+      if (!match) {
+        return;
+      }
+      const id = String(match[1] || "").trim().toLowerCase();
+      const labelText = String(match[2] || "").trim();
+      if (!id || seen.has(id)) {
+        return;
+      }
+      seen.add(id);
+      out.push({
+        id,
+        label: labelText ? `${labelText} (${id})` : id,
+      });
+    });
+    return out;
+  }
+
+  function parseReleaseIdsFromText(text) {
+    const out = [];
+    const seen = new Set();
+    const matches = String(text || "").match(RELEASE_ID_RE) || [];
+    matches.forEach((value) => {
+      const id = String(value || "").trim().toLowerCase();
+      if (!id || seen.has(id)) {
+        return;
+      }
+      seen.add(id);
+      out.push(id);
+    });
+    return out;
   }
 
   function showReleaseCandidates(candidates) {
@@ -1399,8 +1493,6 @@
     });
 
     wrap.classList.remove("is-hidden");
-    el("release").value = options[0].id;
-    updateDiscMetaDirtyIndicators();
   }
 
   function hideReleaseCandidates() {
@@ -1908,6 +2000,9 @@
     if (["queued", "waiting"].includes(s)) {
       return "queued";
     }
+    if (["aborted", "cancelled", "stopped"].includes(s)) {
+      return "aborted";
+    }
     return "detected";
   }
 
@@ -1924,6 +2019,9 @@
     if (status === "queued") {
       return "status-queued";
     }
+    if (status === "aborted") {
+      return "status-aborted";
+    }
     return "status-detected";
   }
 
@@ -1939,6 +2037,9 @@
     }
     if (status === "queued") {
       return t("trackStatus.queued");
+    }
+    if (status === "aborted") {
+      return t("trackStatus.aborted");
     }
     return t("trackStatus.detected");
   }
@@ -2597,7 +2698,7 @@
     } catch (error) {
       scanConfig = collectScanPreviewFallbackConfig();
       ripConfig = null;
-      showError(error.message || String(error));
+      showError(error);
     }
 
     const requests = [];
@@ -2649,7 +2750,7 @@
         if (token !== state.previewRenderToken) {
           return;
         }
-        showError(error.message);
+        showError(error);
         el("command-preview").textContent = "";
       });
   }
@@ -2772,6 +2873,10 @@
       label = t("status.scanning");
       indicatorClass = "active";
       indicatorActive = true;
+    } else if (state.ripStartPending) {
+      label = t("status.ripping");
+      indicatorClass = "active";
+      indicatorActive = true;
     } else {
       const phase = String(state.session.phase || "idle");
       if (phase === "ripping") {
@@ -2845,10 +2950,23 @@
     if (state.scanInProgress) {
       return { name: "scan_running", labelKey: "preScan" };
     }
+    if (state.ripStartPending) {
+      return { name: "rip_running", labelKey: "ripping" };
+    }
 
     const raw = String(state.session.phase || "idle");
     if (raw === "scanning") {
       return { name: "scan_running", labelKey: "preScan" };
+    }
+    if (raw === "scan_error") {
+      return { name: "scan_failed", labelKey: "preScan" };
+    }
+    if (raw === "failed") {
+      const scanMeta = (state.runnerStatus && state.runnerStatus.scan) || {};
+      const hasRipJob = !!(state.runnerStatus && state.runnerStatus.job_id);
+      if (scanMeta.last_success === false && !hasRipJob) {
+        return { name: "scan_failed", labelKey: "preScan" };
+      }
     }
     if (raw === "scanned") {
       return { name: "post_scan", labelKey: "postScan" };
@@ -2875,7 +2993,7 @@
     review.classList.remove("is-active", "is-complete");
     post.classList.remove("is-active", "is-complete");
 
-    if (phaseName === "pre_scan" || phaseName === "scan_running") {
+    if (phaseName === "pre_scan" || phaseName === "scan_running" || phaseName === "scan_failed") {
       pre.classList.add("is-active");
       return;
     }
@@ -2892,9 +3010,9 @@
 
   function applyWorkflowControls(workflow) {
     const running = workflow.name === "rip_running" || workflow.name === "scan_running";
-    const inPreScan = workflow.name === "pre_scan" || workflow.name === "scan_running";
+    const inScanSetup = workflow.name === "pre_scan" || workflow.name === "scan_running" || workflow.name === "scan_failed";
 
-    if (inPreScan) {
+    if (workflow.name === "pre_scan" || workflow.name === "scan_running") {
       hideReleaseCandidates();
     }
 
@@ -2903,7 +3021,7 @@
     el("action-primary").disabled = running;
     el("action-stop").disabled = !running;
     el("action-eject").disabled = running;
-    el("action-back-to-scan").disabled = running || inPreScan;
+    el("action-back-to-scan").disabled = running || inScanSetup;
     setConfigurationEditingLocked(running);
 
     applyPhasePanelFocus(workflow.name);
@@ -2941,6 +3059,7 @@
     const focusByPhase = {
       pre_scan: ["disc-panel", "ripping-panel"],
       scan_running: ["disc-panel", "ripping-panel"],
+      scan_failed: ["disc-panel", "ripping-panel"],
       post_scan: ["disc-panel", "output-panel"],
       rip_running: ["output-panel", "metadata-panel"],
       post_rip: ["disc-panel", "metadata-panel"],
@@ -2959,7 +3078,7 @@
   }
 
   function workspacePanelsForPhase(phaseName) {
-    if (phaseName === "pre_scan" || phaseName === "scan_running") {
+    if (phaseName === "pre_scan" || phaseName === "scan_running" || phaseName === "scan_failed") {
       return ["disc-panel", "ripping-panel"];
     }
     if (phaseName === "post_scan" || phaseName === "rip_running") {

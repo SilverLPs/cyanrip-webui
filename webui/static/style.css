@@ -454,6 +454,55 @@ button.accent {
   filter: saturate(0.72);
 }
 
+.layout-locked .layout :is(input, select, textarea, button):disabled {
+  cursor: not-allowed;
+  opacity: 1;
+  filter: saturate(0.45) brightness(0.92);
+  border-color: rgba(95, 120, 142, 0.72);
+  background-color: rgba(137, 154, 170, 0.28);
+  color: rgba(63, 83, 101, 0.78);
+}
+
+.layout-locked .layout .toggle-option.is-active:disabled,
+.layout-locked .layout .binary-toggle .toggle-option.is-active:disabled {
+  filter: saturate(0.58) brightness(0.88);
+  background-color: rgba(18, 134, 142, 0.48);
+  border-color: rgba(18, 134, 142, 0.72);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="dark"] .layout-locked .layout :is(input, select, textarea, button):disabled {
+  border-color: rgba(89, 111, 130, 0.78);
+  background-color: rgba(58, 73, 88, 0.58);
+  color: rgba(178, 197, 214, 0.76);
+}
+
+:root[data-theme="dark"] .layout-locked .layout .toggle-option.is-active:disabled,
+:root[data-theme="dark"] .layout-locked .layout .binary-toggle .toggle-option.is-active:disabled {
+  background-color: rgba(15, 112, 121, 0.58);
+  border-color: rgba(44, 153, 162, 0.72);
+  color: rgba(230, 250, 255, 0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .layout-locked .layout :is(input, select, textarea, button):disabled {
+    border-color: rgba(89, 111, 130, 0.78);
+    background-color: rgba(58, 73, 88, 0.58);
+    color: rgba(178, 197, 214, 0.76);
+  }
+
+  :root:not([data-theme="light"]) .layout-locked .layout .toggle-option.is-active:disabled,
+  :root:not([data-theme="light"]) .layout-locked .layout .binary-toggle .toggle-option.is-active:disabled {
+    background-color: rgba(15, 112, 121, 0.58);
+    border-color: rgba(44, 153, 162, 0.72);
+    color: rgba(230, 250, 255, 0.9);
+  }
+}
+
+.layout-locked .layout :is(input, select, textarea, button):disabled:hover {
+  transform: none;
+}
+
 .layout button:disabled:hover {
   transform: none;
 }
@@ -717,7 +766,7 @@ body.layout-locked .layout .panel {
 }
 
 .panel.phase-muted {
-  opacity: 0.94;
+  opacity: 1;
 }
 
 .panel.workspace-hidden {
@@ -1532,6 +1581,12 @@ label {
   border-color: #db8d98;
 }
 
+.status-aborted {
+  color: #3d2b54;
+  background: #e8dcff;
+  border-color: #b89cd8;
+}
+
 :root[data-theme="dark"] .status-detected {
   color: #cde6ff;
   background: #2d4a63;
@@ -1560,6 +1615,12 @@ label {
   color: #ffd9df;
   background: #602c33;
   border-color: #ad5e6b;
+}
+
+:root[data-theme="dark"] .status-aborted {
+  color: #ead9ff;
+  background: #4c3b69;
+  border-color: #8f73b7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1591,6 +1652,12 @@ label {
     color: #ffd9df;
     background: #602c33;
     border-color: #ad5e6b;
+  }
+
+  :root:not([data-theme="light"]) .status-aborted {
+    color: #ead9ff;
+    background: #4c3b69;
+    border-color: #8f73b7;
   }
 }
 
@@ -1892,7 +1959,8 @@ body.advanced-open {
 }
 
 .advanced-grid > div > h3 + .terminal,
-.advanced-subhead + .terminal {
+.advanced-subhead + .terminal,
+.advanced-subhead ~ .terminal {
   margin-top: 0.35rem;
 }
 

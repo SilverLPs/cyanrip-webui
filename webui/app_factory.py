@@ -7,6 +7,7 @@ import mimetypes
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -21,8 +22,14 @@ from flask import Flask, jsonify, render_template, request, send_file
 
 try:
     from flask_sock import Sock
-except ModuleNotFoundError:  # pragma: no cover - optional dependency
+except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
     Sock = None
+    SOCK_IMPORT_ERROR = f"flask_sock konnte nicht importiert werden: {exc}"
+except Exception as exc:  # pragma: no cover - defensive guard for packaged environments
+    Sock = None
+    SOCK_IMPORT_ERROR = f"flask_sock Importfehler: {exc}"
+else:
+    SOCK_IMPORT_ERROR = ""
 
 from .command_builder import (
     COVERART_LOOKUP_SIZES,
@@ -38,11 +45,21 @@ from .runner import CyanripJobRunner
 from .scan_parser import parse_scan_output
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_WORKING_DIRECTORY = PROJECT_ROOT / "output"
+APP_IS_FROZEN = bool(
+    getattr(sys, "frozen", False)
+    or getattr(sys, "_MEIPASS", None)
+    or "_internal" in Path(__file__).resolve().parts
+)
+APP_DATA_ROOT = (
+    Path(os.environ.get("XDG_DATA_HOME") or (Path.home() / ".local" / "share")) / "cyanrip-webui"
+    if APP_IS_FROZEN
+    else PROJECT_ROOT
+)
+DEFAULT_WORKING_DIRECTORY = APP_DATA_ROOT / "output"
 DEFAULT_BINARY_PATH = "./bin/cyanrip"
 DEFAULT_UI_SETTINGS: dict[str, Any] = {
     "binary_path": DEFAULT_BINARY_PATH,
-    "working_directory": "./output",
+    "working_directory": str(DEFAULT_WORKING_DIRECTORY) if APP_IS_FROZEN else "./output",
     "language": "en",
     "device_profiles": {},
     "misc_offset": 0,
@@ -56,7 +73,7 @@ _RIP_PROGRESS_LINE_RE = re.compile(
 )
 _MB_RELEASE_ID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE)
 _MB_RELEASE_OPTION_RE = re.compile(
-    r"^\s*\d+\s+\(ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*:\s*(.+?)\s*$",
+    r"^\s*\d+\s*\(ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*:\s*(.+?)\s*$",
     re.IGNORECASE,
 )
 _MULTI_RELEASE_HINT_RE = re.compile(
@@ -74,7 +91,7 @@ def create_app() -> Flask:
     state_lock = threading.RLock()
     cover_cache: dict[str, dict[str, Any]] = {}
 
-    DEFAULT_WORKING_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    _ensure_runtime_directories()
 
     ui_state: dict[str, Any] = {
         "session_id": _new_session_id(),
@@ -177,6 +194,7 @@ def create_app() -> Flask:
                 "settings": copy.deepcopy(DEFAULT_UI_SETTINGS),
                 "binary": _binary_probe_snapshot(ui_state, state_lock),
                 "websocket_available": bool(sock is not None),
+                "websocket_error": SOCK_IMPORT_ERROR,
             }
         )
 
@@ -356,6 +374,10 @@ def create_app() -> Flask:
     def scan() -> Any:
         if runner.snapshot()["is_running"]:
             return jsonify({"error": "Ein Rip-Job laeuft bereits. Bitte zuerst stoppen oder warten."}), 409
+        try:
+            runner.reset_runtime_state()
+        except RuntimeError:
+            return jsonify({"error": "Ein Rip-Job laeuft bereits. Bitte zuerst stoppen oder warten."}), 409
         with state_lock:
             active_scan = scan_runtime.get("process")
             if active_scan is not None and active_scan.poll() is None:
@@ -440,10 +462,13 @@ def create_app() -> Flask:
             "output_lines": scan_result.get("output_lines") or 0,
             "output_preview": scan_result.get("output_preview") or "",
         }
-        if scan_result.get("release_candidates"):
-            payload_out["release_candidates"] = scan_result.get("release_candidates")
-            payload_out["release_options"] = scan_result.get("release_options") or []
+        release_candidates = scan_result.get("release_candidates") or []
+        release_options = scan_result.get("release_options") or []
+        if release_candidates or release_options:
+            payload_out["release_candidates"] = release_candidates
+            payload_out["release_options"] = release_options
             payload_out["error_kind"] = "release_selection_required"
+        payload_out["output_snippet"] = payload_out.get("output_preview") or ""
 
         if scan_was_cancelled:
             payload_out["error"] = "CD-Scan wurde abgebrochen."
@@ -1004,6 +1029,8 @@ def _run_disc_scan(
     parsed = parse_scan_output(normalized_output)
     release_candidates = _extract_release_candidates(normalized_output)
     release_options = _extract_release_options(normalized_output)
+    if release_options and not release_candidates:
+        release_candidates = [str(item.get("id") or "").strip().lower() for item in release_options if item.get("id")]
 
     cancelled = cancel_requested or returncode in (-15, -9, 143, 137)
     error_message = _build_scan_error_message(
@@ -1011,6 +1038,7 @@ def _run_disc_scan(
         returncode=returncode,
         raw_output=normalized_output,
         release_candidates=release_candidates,
+        release_options=release_options,
     )
 
     return {
@@ -1131,12 +1159,13 @@ def _build_scan_error_message(
     returncode: int,
     raw_output: str,
     release_candidates: list[str],
+    release_options: list[dict[str, str]],
 ) -> str | None:
     if cancelled:
         return "CD-Scan wurde abgebrochen."
     if returncode == 0:
         return None
-    if release_candidates:
+    if release_candidates or release_options:
         return (
             "Mehrere Releases fuer diese Disc-ID gefunden. "
             "Bitte eine Release-ID auswaehlen und den Scan erneut starten."
@@ -1209,6 +1238,34 @@ def _read_profile_map_from_request() -> dict[str, dict[str, int]]:
     except json.JSONDecodeError:
         return {}
     return _coerce_device_profiles(payload)
+
+
+def _ensure_runtime_directories() -> None:
+    global APP_DATA_ROOT, DEFAULT_WORKING_DIRECTORY
+
+    candidates = [APP_DATA_ROOT]
+    if APP_IS_FROZEN:
+        tmp_root = Path(os.environ.get("TMPDIR") or "/tmp") / "cyanrip-webui"
+        if tmp_root not in candidates:
+            candidates.append(tmp_root)
+
+    last_error: OSError | None = None
+    for root in candidates:
+        workdir = root / "output"
+        try:
+            workdir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            last_error = exc
+            continue
+
+        APP_DATA_ROOT = root
+        DEFAULT_WORKING_DIRECTORY = workdir
+        if APP_IS_FROZEN:
+            DEFAULT_UI_SETTINGS["working_directory"] = str(DEFAULT_WORKING_DIRECTORY)
+        return
+
+    if last_error is not None:
+        raise last_error
 
 
 def _disc_signature(disc: dict[str, Any]) -> str:
@@ -1381,7 +1438,7 @@ def _list_directories(raw_path: str) -> dict[str, Any]:
         "path": str(target),
         "parent": str(parent) if parent is not None else None,
         "home": str(Path.home()),
-        "project_root": str(PROJECT_ROOT),
+        "project_root": str(APP_DATA_ROOT),
         "directories": directories,
     }
 
@@ -1393,7 +1450,7 @@ def _resolve_directory_for_browse(raw_path: str) -> Path:
 
     candidate = Path(candidate_raw).expanduser()
     if not candidate.is_absolute():
-        candidate = (PROJECT_ROOT / candidate).resolve()
+        candidate = (APP_DATA_ROOT / candidate).resolve()
     else:
         candidate = candidate.resolve()
 
@@ -1420,7 +1477,7 @@ def _resolve_working_directory(raw_value: str) -> str:
     user_value = (raw_value or "").strip()
     workdir = Path(user_value).expanduser() if user_value else DEFAULT_WORKING_DIRECTORY
     if not workdir.is_absolute():
-        workdir = (PROJECT_ROOT / workdir).resolve()
+        workdir = (APP_DATA_ROOT / workdir).resolve()
     else:
         workdir = workdir.resolve()
 
@@ -1442,7 +1499,8 @@ def _resolve_binary_path(raw_value: str) -> str:
 
     has_separator = any(sep and sep in value for sep in (os.sep, os.altsep))
     if has_separator or value.startswith(".") or value.startswith("~"):
-        return str((PROJECT_ROOT / candidate).resolve())
+        base = Path.cwd() if APP_IS_FROZEN else PROJECT_ROOT
+        return str((base / candidate).resolve())
 
     # Bare command name, let PATH resolution handle it (e.g. "cyanrip").
     return value

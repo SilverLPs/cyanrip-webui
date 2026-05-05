@@ -434,6 +434,7 @@ class CyanripJobRunner:
 
                 if self._stop_requested:
                     self._state = "stopped"
+                    self._mark_running_tracks_aborted()
                     self._append_log("cyanrip wurde gestoppt.")
                 elif returncode == 0:
                     self._state = "finished"
@@ -443,6 +444,13 @@ class CyanripJobRunner:
                     self._append_log(f"cyanrip mit Exit-Code {returncode} beendet.")
 
                 self._stop_requested = False
+
+    def _mark_running_tracks_aborted(self) -> None:
+        for row in self._rip_tracks.values():
+            status = str(row.get("status") or "").strip().lower()
+            if status in {"running", "queued"}:
+                row["status"] = "aborted"
+                row["accurip"] = self._format_accurip(row)
 
     def _flush_pending_lines(self, pending: str) -> str:
         start = 0
@@ -644,6 +652,8 @@ class CyanripJobRunner:
             return "error"
         if value in ("queued", "waiting"):
             return "queued"
+        if value in ("aborted", "cancelled", "stopped"):
+            return "aborted"
         return "detected"
 
     @staticmethod

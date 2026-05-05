@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import webbrowser
@@ -21,7 +22,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--debug", action="store_true", help="Enable Flask debug mode")
     parser.add_argument("--headless", action="store_true", help="Force headless mode even on desktop systems")
     parser.add_argument("--no-tray", action="store_true", help="Disable tray integration")
-    parser.add_argument("--no-browser", action="store_true", help="Do not auto-open browser on startup")
+    parser.add_argument("--open-browser", action="store_true", help="Open browser automatically on startup")
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Deprecated alias. Browser auto-open is disabled by default.",
+    )
     return parser.parse_args()
 
 
@@ -39,9 +45,11 @@ def run_backend(host: str, port: int, debug: bool) -> None:
     )
 
 
-def wait_until_ready(url: str, timeout_seconds: float = 20.0) -> bool:
+def wait_until_ready(url: str, timeout_seconds: float = 20.0, alive_check: object | None = None) -> bool:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
+        if callable(alive_check) and not alive_check():
+            return False
         try:
             request = Request(url, headers={"Accept": "text/html"}, method="GET")
             with urlopen(request, timeout=1.6):  # nosec: B310 - local service probe
@@ -64,25 +72,52 @@ def notify_desktop(title: str, message: str) -> None:
 
 
 def has_gui_session() -> bool:
-    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+    if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
+        return True
+    session_type = str(os.environ.get("XDG_SESSION_TYPE") or "").strip().lower()
+    return session_type in {"wayland", "x11"}
 
 
-def create_tray_icon() -> object:
-    import pystray
+def tray_backend_candidates() -> list[str | None]:
+    preferred = os.environ.get("PYSTRAY_BACKEND")
+    if preferred:
+        return [preferred]
+
+    if not has_gui_session():
+        return [None]
+
+    candidates: list[str | None] = ["appindicator", "gtk"]
+    session_type = str(os.environ.get("XDG_SESSION_TYPE") or "").strip().lower()
+    # XEmbed is a legacy fallback. On Wayland sessions it can create a broken
+    # XWayland icon without a working menu, so only try it for real X11.
+    if session_type == "x11" or (os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY")):
+        candidates.append("xorg")
+    candidates.append(None)
+    return candidates
+
+
+def create_tray_image() -> object:
     from PIL import Image, ImageDraw
 
-    image = Image.new("RGBA", (64, 64), (14, 40, 52, 255))
+    size = 128
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    draw.rectangle((6, 6, 58, 58), outline=(55, 207, 194, 255), width=4)
-    draw.ellipse((18, 18, 46, 46), outline=(255, 191, 93, 255), width=4)
-    draw.ellipse((28, 28, 36, 36), fill=(55, 207, 194, 255))
-    return pystray.Icon("cyanrip-webui", image, "cyanrip-webui")
+
+    draw.rounded_rectangle((10, 10, 118, 118), radius=18, fill=(10, 42, 55, 255))
+    draw.rounded_rectangle((18, 18, 110, 110), radius=14, outline=(47, 212, 197, 255), width=6)
+    draw.ellipse((39, 39, 89, 89), outline=(245, 178, 92, 255), width=8)
+    draw.ellipse((56, 56, 72, 72), fill=(47, 212, 197, 255))
+    return image
+
+
+def create_tray_icon(menu: object) -> object:
+    import pystray
+
+    return pystray.Icon("cyanrip-webui", create_tray_image(), "cyanrip-webui", menu=menu)
 
 
 def run_with_tray(base_url: str, stop_event: threading.Event) -> None:
     import pystray
-
-    icon = create_tray_icon()
 
     def open_ui(_icon: object, _item: object) -> None:
         webbrowser.open(base_url, new=2)
@@ -91,11 +126,37 @@ def run_with_tray(base_url: str, stop_event: threading.Event) -> None:
         stop_event.set()
         icon_obj.stop()
 
-    icon.menu = pystray.Menu(
+    menu = pystray.Menu(
         pystray.MenuItem("Open Web UI", open_ui, default=True),
         pystray.MenuItem("Quit", quit_ui),
     )
+    icon = create_tray_icon(menu)
     icon.run()
+
+
+def run_with_tray_fallbacks(base_url: str, stop_event: threading.Event) -> bool:
+    last_error: Exception | None = None
+    for candidate in tray_backend_candidates():
+        try:
+            if candidate:
+                os.environ["PYSTRAY_BACKEND"] = candidate
+            elif "PYSTRAY_BACKEND" in os.environ:
+                del os.environ["PYSTRAY_BACKEND"]
+            for module_name in list(sys.modules.keys()):
+                if module_name == "pystray" or module_name.startswith("pystray."):
+                    sys.modules.pop(module_name, None)
+            run_with_tray(base_url, stop_event)
+            return True
+        except KeyboardInterrupt:
+            stop_event.set()
+            return True
+        except Exception as exc:
+            last_error = exc
+            continue
+
+    if last_error is not None:
+        print(f"Tray integration unavailable: {last_error}")
+    return False
 
 
 def main() -> int:
@@ -110,8 +171,13 @@ def main() -> int:
     backend_thread.start()
 
     base_url = f"http://{args.host}:{args.port}"
-    ready = wait_until_ready(base_url)
-    if ready and not args.no_browser:
+    ready = wait_until_ready(base_url, alive_check=backend_thread.is_alive)
+    if not ready and not backend_thread.is_alive():
+        print("cyanrip-webui backend failed to start.")
+        return 1
+
+    should_open_browser = bool(args.open_browser and not args.no_browser)
+    if ready and should_open_browser:
         try:
             webbrowser.open(base_url, new=2)
         except Exception:
@@ -134,10 +200,8 @@ def main() -> int:
             stop_event.set()
         return 0
 
-    try:
-        run_with_tray(base_url, stop_event)
-    except Exception:
-        print("Tray integration unavailable; continuing without tray.")
+    tray_started = run_with_tray_fallbacks(base_url, stop_event)
+    if not tray_started:
         try:
             while backend_thread.is_alive() and not stop_event.is_set():
                 time.sleep(0.5)

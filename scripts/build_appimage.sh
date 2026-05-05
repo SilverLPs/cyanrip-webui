@@ -34,31 +34,51 @@ python3 -m pip install -r "${ROOT_DIR}/requirements.txt" pyinstaller
 pyinstaller \
   --noconfirm \
   --clean \
+  --onedir \
   --distpath "${PYI_DIST_DIR}" \
   --workpath "${PYI_BUILD_DIR}" \
   --specpath "${BUILD_DIR}" \
   --name "${APP_ID}" \
+  --collect-submodules flask_sock \
+  --collect-submodules simple_websocket \
+  --collect-submodules wsproto \
+  --collect-submodules pystray \
+  --collect-submodules PIL \
   --add-data "${ROOT_DIR}/webui/templates:webui/templates" \
   --add-data "${ROOT_DIR}/webui/static:webui/static" \
   "${ROOT_DIR}/launcher.py"
 
-mkdir -p "${APPDIR}/usr/bin"
-BINARY_SRC="${PYI_DIST_DIR}/${APP_ID}"
-if [[ -d "${BINARY_SRC}" && -x "${BINARY_SRC}/${APP_ID}" ]]; then
-  BINARY_SRC="${BINARY_SRC}/${APP_ID}"
-elif [[ -d "${BINARY_SRC}" ]]; then
-  BINARY_CANDIDATE="$(find "${BINARY_SRC}" -maxdepth 1 -type f -perm -111 | head -n 1 || true)"
-  if [[ -n "${BINARY_CANDIDATE}" ]]; then
-    BINARY_SRC="${BINARY_CANDIDATE}"
-  fi
-fi
-if [[ ! -x "${BINARY_SRC}" ]]; then
-  echo "PyInstaller output binary not found: ${BINARY_SRC}"
+RUNTIME_SRC_DIR="${PYI_DIST_DIR}/${APP_ID}"
+if [[ ! -d "${RUNTIME_SRC_DIR}" ]]; then
+  echo "PyInstaller output directory not found: ${RUNTIME_SRC_DIR}"
   echo "Dist directory content:"
   ls -la "${PYI_DIST_DIR}" || true
   exit 1
 fi
-cp "${BINARY_SRC}" "${APPDIR}/usr/bin/${APP_ID}"
+
+RUNTIME_DST_DIR="${APPDIR}/usr/lib/${APP_ID}"
+mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}"
+cp -a "${RUNTIME_SRC_DIR}/." "${RUNTIME_DST_DIR}/"
+
+RUNTIME_BIN="${RUNTIME_DST_DIR}/${APP_ID}"
+if [[ ! -x "${RUNTIME_BIN}" ]]; then
+  RUNTIME_BIN_CANDIDATE="$(find "${RUNTIME_DST_DIR}" -maxdepth 1 -type f -perm -111 | head -n 1 || true)"
+  if [[ -n "${RUNTIME_BIN_CANDIDATE}" ]]; then
+    RUNTIME_BIN="${RUNTIME_BIN_CANDIDATE}"
+  fi
+fi
+if [[ ! -x "${RUNTIME_BIN}" ]]; then
+  echo "PyInstaller runtime binary not found in ${RUNTIME_DST_DIR}"
+  ls -la "${RUNTIME_DST_DIR}" || true
+  exit 1
+fi
+
+cat >"${APPDIR}/usr/bin/${APP_ID}" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+HERE="\$(dirname "\$(readlink -f "\$0")")"
+exec "\${HERE}/../lib/${APP_ID}/$(basename "${RUNTIME_BIN}")" "\$@"
+EOF
 chmod +x "${APPDIR}/usr/bin/${APP_ID}"
 
 cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/${APP_ID}.desktop"

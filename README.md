@@ -68,6 +68,12 @@ Alternative launcher (tray/headless aware):
 python3 launcher.py
 ```
 
+Optional browser auto-open:
+
+```bash
+python3 launcher.py --open-browser
+```
+
 4. Open: `http://127.0.0.1:8080`
 
 ## API Endpoints
@@ -114,6 +120,7 @@ Runtime notes:
 
 - AppImage entrypoint is `launcher.py` (backend + optional tray integration).
 - Use `--headless` to force non-GUI/background behavior on desktop systems.
+- Browser auto-open is disabled by default; use `--open-browser` if desired.
 
 ## Tests
 
