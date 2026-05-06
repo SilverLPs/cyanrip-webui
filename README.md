@@ -17,7 +17,8 @@ It does not modify cyanrip itself; it only controls the cyanrip CLI process and 
 - Global runtime settings persisted in browser storage (binary path, working directory, language, per-drive offsets)
 - Theme auto-detection (light/dark) with manual override
 - English as default language, with locale files and browser language detection
-- WebSocket-first status/log streaming with HTTP polling fallback
+- WebSocket-first status/log streaming with optional HTTP polling fallback
+- WebSocket RPC for frontend/backend JSON actions; HTTP fallback is opt-in for debugging only
 
 ## Project Layout
 
@@ -62,6 +63,12 @@ Enable verbose Flask debug logs only when needed:
 python3 app.py --debug
 ```
 
+Allow HTTP fallback if WebSocket transport is unavailable:
+
+```bash
+python3 app.py --enable-http-fallback
+```
+
 Alternative launcher (tray/headless aware):
 
 ```bash
@@ -72,6 +79,12 @@ Optional browser auto-open:
 
 ```bash
 python3 launcher.py --open-browser
+```
+
+The launcher supports the same fallback switch:
+
+```bash
+python3 launcher.py --enable-http-fallback
 ```
 
 4. Open: `http://127.0.0.1:8080`
@@ -85,7 +98,8 @@ python3 launcher.py --open-browser
 - `POST /api/eject`: open CD drive tray via `eject`
 - `GET /api/status`: job status snapshot
 - `GET /api/logs?source=<auto|scan|rip>&since=<index>`: incremental logs (phase-aware by default with `source=auto`)
-- `WS /ws/status`: status + incremental logs stream (if `flask-sock` is available)
+- `WS /ws/status`: status + incremental logs stream
+- `WS /ws/rpc`: JSON RPC transport for API-style frontend/backend actions
 - `GET /api/cover?path=<file>`: serve scanned cover image previews from backend filesystem
 - `GET /api/settings`: load backend defaults + binary probe status (+ websocket capability)
 - `POST /api/settings`: stateless normalization/probe helper (does not persist server-side)
@@ -97,11 +111,15 @@ python3 launcher.py --open-browser
 
 ## Notes
 
-- `working_directory` defaults to `./output`.
+- `working_directory` defaults to `./output` during source-tree runs.
+- In AppImage builds, the default output directory is `output` next to the AppImage file.
+- AppImage builds bundle `bin/cyanrip` and use that binary by default; users can still point the setting at another cyanrip executable.
 - The web UI uses user-facing workflow phases; backend still keeps technical session phases and IDs for state tracking.
 - Directory selection in the UI is server-side (backend filesystem, not browser client filesystem).
 - Multi-entry args (`-p`, `-C`) are mapped via line-based UI inputs; track metadata (`-t`) is built from edited rows in the track table.
 - Multi-release DiscID scan errors are surfaced in UI with release ID selection, not only in logs.
+- Missing MusicBrainz release info is surfaced with the MusicBrainz DiscID submission URL and an option to rescan without MusicBrainz.
+- HTTP remains necessary for the initial HTML/static assets, locale files, cover image previews, and the first settings/capability request. Normal JSON actions use WebSocket RPC after that. HTTP fallback for these actions is disabled by default and can be enabled with `--enable-http-fallback`.
 - Current target platform is Linux.
 
 ## Packaging (AppImage)
@@ -119,6 +137,7 @@ Output:
 Runtime notes:
 
 - AppImage entrypoint is `launcher.py` (backend + optional tray integration).
+- The launcher prefers Qt's native system tray integration. Legacy XEmbed/pystray can be enabled with `CYANRIP_WEBUI_ALLOW_XEMBED_TRAY=1` for debugging, but it is not the default because it has limited menu support.
 - Use `--headless` to force non-GUI/background behavior on desktop systems.
 - Browser auto-open is disabled by default; use `--open-browser` if desired.
 

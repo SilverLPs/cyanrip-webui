@@ -1,15 +1,23 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 APP_FACTORY_IMPORT_ERROR = None
 
 try:
     from webui.app_factory import (
+        create_app,
+        _dispatch_ws_rpc,
         _extract_release_candidates,
         _extract_release_options,
+        _extract_musicbrainz_submission_url,
+        _classify_scan_error,
         _list_directories,
         _resolve_directory_for_browse,
+        _runtime_data_root,
+        _runtime_default_binary_path,
+        _runtime_default_output_dir,
         _scan_config_from_user,
     )
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional test env deps
@@ -84,6 +92,25 @@ class DirectoryBrowseTests(unittest.TestCase):
         cfg = _scan_config_from_user({"release": "669ea5be-085c-406c-9cd8-4e1107cf0998"})
         self.assertEqual(cfg["release"], "669ea5be-085c-406c-9cd8-4e1107cf0998")
 
+    def test_runtime_default_paths_can_be_overridden_by_appimage_env(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            appimage_dir = Path(temp_dir)
+            output_dir = appimage_dir / "output"
+            binary = appimage_dir / "usr" / "bin" / "cyanrip"
+
+            with mock.patch.dict(
+                "os.environ",
+                {
+                    "CYANRIP_WEBUI_DEFAULT_OUTPUT_DIR": str(output_dir),
+                    "CYANRIP_WEBUI_BUNDLED_CYANRIP": str(binary),
+                },
+            ):
+                data_root = _runtime_data_root()
+
+                self.assertEqual(data_root, appimage_dir)
+                self.assertEqual(_runtime_default_output_dir(data_root), output_dir)
+                self.assertEqual(_runtime_default_binary_path(), str(binary))
+
     def test_extract_release_candidates_from_multi_release_output(self) -> None:
         sample = """
 Error: multiple releases were found for this disc id.
@@ -119,6 +146,48 @@ Multiple releases found in database for DiscID xK0tLeZ7wIoD8OQdqNKITcnSNhE-:
                 },
             ],
         )
+
+    def test_extract_musicbrainz_submission_url_from_no_release_output(self) -> None:
+        sample = """
+Unable to find release info for this CD, and metadata hasn't been manually added!
+Please help improve the MusicBrainz DB by submitting the disc info via the following URL:
+https://musicbrainz.org/cdtoc/attach?toc=1+2+33892+150+15544&tracks=2&id=5WDBlEEBFuSweSiev4RhZa8VMuw-
+To continue add metadata via -a or -t, or ignore via -N!
+"""
+
+        url = _extract_musicbrainz_submission_url(sample)
+        self.assertEqual(
+            url,
+            "https://musicbrainz.org/cdtoc/attach?toc=1+2+33892+150+15544&tracks=2&id=5WDBlEEBFuSweSiev4RhZa8VMuw-",
+        )
+        self.assertEqual(
+            _classify_scan_error(
+                raw_output=sample,
+                release_candidates=[],
+                release_options=[],
+                musicbrainz_submission_url=url,
+            ),
+            "no_release_found",
+        )
+
+    def test_websocket_rpc_dispatches_allowed_api_route(self) -> None:
+        app = create_app()
+
+        response = _dispatch_ws_rpc(app, {"id": 7, "method": "GET", "url": "/api/settings"})
+
+        self.assertEqual(response["type"], "rpc")
+        self.assertEqual(response["id"], 7)
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["status"], 200)
+        self.assertIn("settings", response["body"])
+
+    def test_websocket_rpc_rejects_non_rpc_routes(self) -> None:
+        app = create_app()
+
+        response = _dispatch_ws_rpc(app, {"id": 8, "method": "GET", "url": "/api/cover"})
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["status"], 404)
 
 
 if __name__ == "__main__":

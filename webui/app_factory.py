@@ -50,13 +50,63 @@ APP_IS_FROZEN = bool(
     or getattr(sys, "_MEIPASS", None)
     or "_internal" in Path(__file__).resolve().parts
 )
-APP_DATA_ROOT = (
-    Path(os.environ.get("XDG_DATA_HOME") or (Path.home() / ".local" / "share")) / "cyanrip-webui"
-    if APP_IS_FROZEN
-    else PROJECT_ROOT
-)
-DEFAULT_WORKING_DIRECTORY = APP_DATA_ROOT / "output"
-DEFAULT_BINARY_PATH = "./bin/cyanrip"
+
+
+def _env_path(name: str) -> Path | None:
+    value = str(os.environ.get(name) or "").strip()
+    if not value:
+        return None
+    try:
+        return Path(value).expanduser().resolve()
+    except OSError:
+        return Path(value).expanduser()
+
+
+def _runtime_data_root() -> Path:
+    explicit_output = _env_path("CYANRIP_WEBUI_DEFAULT_OUTPUT_DIR")
+    if explicit_output is not None:
+        return explicit_output.parent
+
+    appimage = _env_path("APPIMAGE")
+    if appimage is not None:
+        return appimage.parent
+
+    if APP_IS_FROZEN:
+        return Path(os.environ.get("XDG_DATA_HOME") or (Path.home() / ".local" / "share")) / "cyanrip-webui"
+
+    return PROJECT_ROOT
+
+
+def _runtime_default_output_dir(data_root: Path) -> Path:
+    explicit_output = _env_path("CYANRIP_WEBUI_DEFAULT_OUTPUT_DIR")
+    if explicit_output is not None:
+        return explicit_output
+    return data_root / "output"
+
+
+def _runtime_default_binary_path() -> str:
+    bundled = _env_path("CYANRIP_WEBUI_BUNDLED_CYANRIP")
+    if bundled is not None:
+        return str(bundled)
+
+    appdir = _env_path("APPDIR") or _env_path("CYANRIP_WEBUI_APPDIR")
+    if APP_IS_FROZEN and appdir is not None:
+        candidate = appdir / "usr" / "bin" / "cyanrip"
+        if candidate.exists():
+            return str(candidate)
+
+    return "./bin/cyanrip"
+
+
+APP_DATA_ROOT = _runtime_data_root()
+DEFAULT_WORKING_DIRECTORY = _runtime_default_output_dir(APP_DATA_ROOT)
+DEFAULT_BINARY_PATH = _runtime_default_binary_path()
+HTTP_FALLBACK_ENABLED = str(os.environ.get("CYANRIP_WEBUI_HTTP_FALLBACK") or "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 DEFAULT_UI_SETTINGS: dict[str, Any] = {
     "binary_path": DEFAULT_BINARY_PATH,
     "working_directory": str(DEFAULT_WORKING_DIRECTORY) if APP_IS_FROZEN else "./output",
@@ -80,6 +130,28 @@ _MULTI_RELEASE_HINT_RE = re.compile(
     r"(multiple\s+releases?|mehrere\s+releases?|release\s+id|musicbrainz)",
     re.IGNORECASE,
 )
+_NO_RELEASE_HINT_RE = re.compile(
+    r"(unable\s+to\s+find\s+release\s+info|no\s+releases?\s+found|discid\s+has\s+no\s+associated\s+releases|"
+    r"metadaten?.*nicht|release\s+info.*nicht)",
+    re.IGNORECASE,
+)
+_MB_CD_TOC_ATTACH_RE = re.compile(r"https://musicbrainz\.org/cdtoc/attach\?[^\s<>\"]+", re.IGNORECASE)
+_WS_RPC_ALLOWED: set[tuple[str, str]] = {
+    ("GET", "/api/settings"),
+    ("POST", "/api/settings"),
+    ("POST", "/api/probe"),
+    ("GET", "/api/fs/directories"),
+    ("GET", "/api/drives"),
+    ("POST", "/api/drives/offset"),
+    ("POST", "/api/session/reset"),
+    ("POST", "/api/preview"),
+    ("POST", "/api/scan"),
+    ("POST", "/api/start"),
+    ("POST", "/api/stop"),
+    ("POST", "/api/eject"),
+    ("GET", "/api/status"),
+    ("GET", "/api/logs"),
+}
 
 
 def create_app() -> Flask:
@@ -195,6 +267,7 @@ def create_app() -> Flask:
                 "binary": _binary_probe_snapshot(ui_state, state_lock),
                 "websocket_available": bool(sock is not None),
                 "websocket_error": SOCK_IMPORT_ERROR,
+                "http_fallback_enabled": HTTP_FALLBACK_ENABLED,
             }
         )
 
@@ -468,6 +541,11 @@ def create_app() -> Flask:
             payload_out["release_candidates"] = release_candidates
             payload_out["release_options"] = release_options
             payload_out["error_kind"] = "release_selection_required"
+            payload_out["error_key"] = "error.releaseSelectionRequired"
+        elif scan_result.get("error_kind") == "no_release_found":
+            payload_out["error_kind"] = "no_release_found"
+            payload_out["error_key"] = "error.noReleaseFound"
+            payload_out["musicbrainz_submission_url"] = scan_result.get("musicbrainz_submission_url") or ""
         payload_out["output_snippet"] = payload_out.get("output_preview") or ""
 
         if scan_was_cancelled:
@@ -476,7 +554,7 @@ def create_app() -> Flask:
 
         if returncode != 0:
             payload_out["error"] = scan_result.get("error") or f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
-            if payload_out.get("error_kind") == "release_selection_required":
+            if payload_out.get("error_kind") in {"release_selection_required", "no_release_found"}:
                 return jsonify(payload_out), 409
             return jsonify(payload_out), 422
 
@@ -760,7 +838,72 @@ def create_app() -> Flask:
             except (ConnectionError, OSError):
                 return
 
+        @sock.route("/ws/rpc")
+        def ws_rpc(ws: Any) -> None:
+            try:
+                while True:
+                    raw = ws.receive()
+                    if raw is None:
+                        return
+
+                    try:
+                        request_payload = json.loads(str(raw or "{}"))
+                    except json.JSONDecodeError:
+                        ws.send(json.dumps({"type": "rpc", "ok": False, "error": "Invalid JSON."}, ensure_ascii=True))
+                        continue
+
+                    response_payload = _dispatch_ws_rpc(app, request_payload)
+                    ws.send(json.dumps(response_payload, ensure_ascii=True))
+            except (ConnectionError, OSError):
+                return
+
     return app
+
+
+def _dispatch_ws_rpc(app: Flask, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = payload.get("id") if isinstance(payload, dict) else None
+    method = str(payload.get("method") or "GET").strip().upper() if isinstance(payload, dict) else "GET"
+    raw_url = str(payload.get("url") or "").strip() if isinstance(payload, dict) else ""
+    body = payload.get("body") if isinstance(payload, dict) else None
+
+    parsed = urlparse(raw_url)
+    path = parsed.path or raw_url.split("?", 1)[0]
+    query_string = parsed.query
+
+    if (method, path) not in _WS_RPC_ALLOWED:
+        return {
+            "type": "rpc",
+            "id": request_id,
+            "ok": False,
+            "status": 404,
+            "body": {"error": "WebSocket RPC route is not allowed."},
+        }
+
+    try:
+        with app.test_request_context(path, method=method, query_string=query_string, json=body if method != "GET" else None):
+            response = app.full_dispatch_request()
+    except Exception as exc:  # pragma: no cover - mirrors Flask's HTTP error surface defensively
+        app.logger.exception("WebSocket RPC failed")
+        return {
+            "type": "rpc",
+            "id": request_id,
+            "ok": False,
+            "status": 500,
+            "body": {"error": f"WebSocket RPC failed: {exc}"},
+        }
+
+    response_body = response.get_json(silent=True)
+    if response_body is None:
+        text = response.get_data(as_text=True)
+        response_body = {"text": text} if text else {}
+
+    return {
+        "type": "rpc",
+        "id": request_id,
+        "ok": 200 <= response.status_code < 400,
+        "status": response.status_code,
+        "body": response_body,
+    }
 
 
 def _enriched_status_snapshot(runner: CyanripJobRunner, ui_state: dict[str, Any], lock: threading.RLock) -> dict[str, Any]:
@@ -1031,6 +1174,13 @@ def _run_disc_scan(
     release_options = _extract_release_options(normalized_output)
     if release_options and not release_candidates:
         release_candidates = [str(item.get("id") or "").strip().lower() for item in release_options if item.get("id")]
+    musicbrainz_submission_url = _extract_musicbrainz_submission_url(normalized_output)
+    error_kind = _classify_scan_error(
+        raw_output=normalized_output,
+        release_candidates=release_candidates,
+        release_options=release_options,
+        musicbrainz_submission_url=musicbrainz_submission_url,
+    )
 
     cancelled = cancel_requested or returncode in (-15, -9, 143, 137)
     error_message = _build_scan_error_message(
@@ -1039,6 +1189,7 @@ def _run_disc_scan(
         raw_output=normalized_output,
         release_candidates=release_candidates,
         release_options=release_options,
+        error_kind=error_kind,
     )
 
     return {
@@ -1052,6 +1203,8 @@ def _run_disc_scan(
         "cancelled": cancelled,
         "release_candidates": release_candidates,
         "release_options": release_options,
+        "error_kind": error_kind,
+        "musicbrainz_submission_url": musicbrainz_submission_url,
     }
 
 
@@ -1153,6 +1306,28 @@ def _extract_release_options(raw_output: str) -> list[dict[str, str]]:
     return out
 
 
+def _extract_musicbrainz_submission_url(raw_output: str) -> str:
+    match = _MB_CD_TOC_ATTACH_RE.search(str(raw_output or ""))
+    return match.group(0).strip() if match else ""
+
+
+def _classify_scan_error(
+    *,
+    raw_output: str,
+    release_candidates: list[str],
+    release_options: list[dict[str, str]],
+    musicbrainz_submission_url: str,
+) -> str | None:
+    if release_candidates or release_options:
+        return "release_selection_required"
+
+    text = str(raw_output or "")
+    if musicbrainz_submission_url and _NO_RELEASE_HINT_RE.search(text):
+        return "no_release_found"
+
+    return None
+
+
 def _build_scan_error_message(
     *,
     cancelled: bool,
@@ -1160,15 +1335,21 @@ def _build_scan_error_message(
     raw_output: str,
     release_candidates: list[str],
     release_options: list[dict[str, str]],
+    error_kind: str | None = None,
 ) -> str | None:
     if cancelled:
         return "CD-Scan wurde abgebrochen."
     if returncode == 0:
         return None
-    if release_candidates or release_options:
+    if error_kind == "release_selection_required" or release_candidates or release_options:
         return (
             "Mehrere Releases fuer diese Disc-ID gefunden. "
             "Bitte eine Release-ID auswaehlen und den Scan erneut starten."
+        )
+    if error_kind == "no_release_found":
+        return (
+            "Keine MusicBrainz-Release-Information fuer diese Disc gefunden. "
+            "Bitte Disc-ID bei MusicBrainz eintragen, erneut scannen oder ohne MusicBrainz fortfahren."
         )
 
     lines = [line.strip() for line in str(raw_output or "").splitlines() if line.strip()]
@@ -1243,22 +1424,22 @@ def _read_profile_map_from_request() -> dict[str, dict[str, int]]:
 def _ensure_runtime_directories() -> None:
     global APP_DATA_ROOT, DEFAULT_WORKING_DIRECTORY
 
-    candidates = [APP_DATA_ROOT]
+    candidates = [DEFAULT_WORKING_DIRECTORY]
     if APP_IS_FROZEN:
-        tmp_root = Path(os.environ.get("TMPDIR") or "/tmp") / "cyanrip-webui"
-        if tmp_root not in candidates:
-            candidates.append(tmp_root)
+        tmp_workdir = Path(os.environ.get("TMPDIR") or "/tmp") / "cyanrip-webui" / "output"
+        if tmp_workdir not in candidates:
+            candidates.append(tmp_workdir)
 
     last_error: OSError | None = None
-    for root in candidates:
-        workdir = root / "output"
+    for workdir in candidates:
         try:
             workdir.mkdir(parents=True, exist_ok=True)
+            _ensure_directory_writable(workdir)
         except OSError as exc:
             last_error = exc
             continue
 
-        APP_DATA_ROOT = root
+        APP_DATA_ROOT = workdir.parent
         DEFAULT_WORKING_DIRECTORY = workdir
         if APP_IS_FROZEN:
             DEFAULT_UI_SETTINGS["working_directory"] = str(DEFAULT_WORKING_DIRECTORY)
@@ -1266,6 +1447,17 @@ def _ensure_runtime_directories() -> None:
 
     if last_error is not None:
         raise last_error
+
+
+def _ensure_directory_writable(path: Path) -> None:
+    probe = path / f".cyanrip-webui-write-test-{os.getpid()}"
+    try:
+        probe.write_text("", encoding="utf-8")
+    finally:
+        try:
+            probe.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _disc_signature(disc: dict[str, Any]) -> str:

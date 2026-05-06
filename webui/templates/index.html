@@ -112,16 +112,24 @@
         </div>
 
         <div id="release-choice" class="release-choice is-hidden">
-          <p class="small-note" data-i18n="disc.releaseChoice.title">
+          <p id="scan-resolution-title" class="small-note" data-i18n="disc.releaseChoice.title">
             Multiple releases were found for this disc. Select the correct release ID.
           </p>
-          <div class="inline-row release-choice-row">
+          <div id="release-choice-controls" class="inline-row release-choice-row">
             <select id="release-candidate-select"></select>
             <button id="release-candidate-apply" type="button" data-i18n="disc.releaseChoice.apply">
               Use release
             </button>
           </div>
-          <p class="small-note" data-i18n="disc.releaseChoice.note">
+          <div id="no-release-controls" class="no-release-controls is-hidden">
+            <a id="no-release-link" class="scan-resolution-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+            <div class="inline-row no-release-actions">
+              <button id="no-release-copy" type="button" data-i18n="disc.noRelease.copy">Copy link</button>
+              <button id="no-release-rescan" type="button" data-i18n="disc.noRelease.rescan">Scan again</button>
+              <button id="no-release-disable-mb" type="button" data-i18n="disc.noRelease.scanWithoutMb">Scan without MusicBrainz</button>
+            </div>
+          </div>
+          <p id="scan-resolution-note" class="small-note" data-i18n="disc.releaseChoice.note">
             The selected release ID is copied to the Release field and the scan can be retried.
           </p>
         </div>

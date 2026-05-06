@@ -96,6 +96,16 @@
       "apply": "Use release and rescan",
       "note": "The selected release ID is copied to the Release field and scan is started again."
     },
+    "noRelease": {
+      "title": "No MusicBrainz release was found for this disc.",
+      "note": "Open or copy the MusicBrainz submission link, then scan again after adding the Disc ID. You can also scan without MusicBrainz; that setting remains disabled for the rip.",
+      "copy": "Copy link",
+      "copied": "MusicBrainz link copied.",
+      "copyFailed": "Could not copy MusicBrainz link.",
+      "rescan": "Scan again",
+      "scanWithoutMb": "Scan without MusicBrainz",
+      "noLink": "MusicBrainz submission link unavailable."
+    },
     "unknownAlbum": "Unknown album",
     "unknownArtist": "Unknown artist"
   },
@@ -301,6 +311,10 @@
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
     "scanRequired": "Scan the disc first to start ripping.",
-    "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first."
+    "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
+    "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
+    "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
+    "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
+    "generic": "An error occurred."
   }
 }

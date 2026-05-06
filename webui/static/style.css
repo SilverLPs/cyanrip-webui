@@ -463,6 +463,13 @@ button.accent {
   color: rgba(63, 83, 101, 0.78);
 }
 
+.layout-locked .layout .outputs input[type="checkbox"]:disabled {
+  opacity: 0;
+  filter: none;
+  border: 0;
+  background: transparent;
+}
+
 .layout-locked .layout .toggle-option.is-active:disabled,
 .layout-locked .layout .binary-toggle .toggle-option.is-active:disabled {
   filter: saturate(0.58) brightness(0.88);
@@ -611,6 +618,26 @@ body.layout-locked .layout .panel {
   margin-top: 0;
 }
 
+#error-box.status-error {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+#error-box.status-error .marquee-text {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+}
+
+#error-box.status-error.is-marquee .marquee-text {
+  max-width: none;
+  min-width: max-content;
+  padding-left: 100%;
+  animation: error-marquee var(--marquee-duration, 14s) linear infinite;
+}
+
 #status-phase {
   font-weight: var(--text-weight-medium);
   color: var(--ink);
@@ -722,8 +749,16 @@ body.layout-locked .layout .panel {
 }
 
 :root[data-animations="off"] .status-indicator,
-:root[data-animations="off"] .status-card::before {
+:root[data-animations="off"] .status-card::before,
+:root[data-animations="off"] #error-box.status-error.is-marquee .marquee-text {
   animation: none !important;
+}
+
+:root[data-animations="off"] #error-box.status-error.is-marquee .marquee-text {
+  max-width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  transform: none;
 }
 
 .layout {
@@ -919,6 +954,31 @@ label {
   grid-template-columns: minmax(0, 1fr) 10.5rem;
   margin-top: 0.15rem;
   margin-bottom: 0.1rem;
+}
+
+.no-release-controls {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.18rem;
+  margin-bottom: 0.12rem;
+}
+
+.scan-resolution-link {
+  display: block;
+  min-width: 0;
+  color: var(--accent-strong);
+  font-size: var(--text-size-note);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-release-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.no-release-actions button {
+  min-width: 0;
 }
 
 :root[data-theme="dark"] .release-choice {
@@ -2130,6 +2190,15 @@ textarea {
   }
   100% {
     transform: translateX(75%);
+  }
+}
+
+@keyframes error-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% - 1rem));
   }
 }
 

@@ -32,6 +32,10 @@
     wsReconnectDelayMs: 1200,
     ws: null,
     wsEnabled: false,
+    rpcWs: null,
+    rpcConnectPromise: null,
+    rpcRequestId: 0,
+    rpcPending: new Map(),
     statusPollTimer: null,
     currentJobId: null,
     nextLogIndex: null,
@@ -52,6 +56,8 @@
     },
     websocketAvailable: false,
     websocketError: "",
+    httpFallbackEnabled: false,
+    backendDefaults: null,
 
     binaryProbe: null,
     drives: [],
@@ -80,6 +86,11 @@
     coverPreviewKey: "",
     coverRetryAfterMs: 0,
     coverRetryKey: "",
+    scanIssue: {
+      kind: null,
+      releaseCandidates: [],
+      musicbrainzUrl: "",
+    },
 
     discInfo: null,
     discOriginal: {
@@ -217,6 +228,9 @@
     el("refresh-drives").addEventListener("click", refreshDrives);
     el("device-select").addEventListener("change", onDriveChanged);
     el("release-candidate-apply").addEventListener("click", applySelectedReleaseCandidateAndRescan);
+    el("no-release-rescan").addEventListener("click", scanDisc);
+    el("no-release-disable-mb").addEventListener("click", scanWithoutMusicBrainz);
+    el("no-release-copy").addEventListener("click", copyNoReleaseLink);
     el("browse-output-directory").addEventListener("click", () => {
       openDirectoryPicker("output-directory-manual");
     });
@@ -494,9 +508,10 @@
   }
 
   function DEFAULT_RUNTIME_SETTINGS() {
+    const backendDefaults = state.backendDefaults || {};
     return {
-      binary_path: "./bin/cyanrip",
-      working_directory: "./output",
+      binary_path: backendDefaults.binary_path || "./bin/cyanrip",
+      working_directory: backendDefaults.working_directory || "./output",
       language: state.locale || "en",
       device_profiles: {},
       misc_offset: 0,
@@ -507,19 +522,18 @@
     clearError();
 
     try {
-      const response = await apiGet("/api/settings");
+      const response = await httpGet("/api/settings");
       const backendDefaults = response.settings || {};
       const binary = response.binary || null;
+      state.backendDefaults = backendDefaults;
       state.websocketAvailable = !!response.websocket_available;
       state.websocketError = String(response.websocket_error || "");
+      state.httpFallbackEnabled = !!response.http_fallback_enabled;
       if (!state.websocketAvailable && state.websocketError) {
         console.warn(`WebSocket disabled: ${state.websocketError}`);
       }
 
-      const merged = {
-        ...backendDefaults,
-        ...(state.settings || {}),
-      };
+      const merged = mergeRuntimeSettings(backendDefaults, state.settings || {});
       applySettings(merged);
       state.binaryProbe = binary;
       renderBinaryStatus();
@@ -569,13 +583,35 @@
     }
   }
 
+  function mergeRuntimeSettings(backendDefaults, storedSettings) {
+    const stored = storedSettings && typeof storedSettings === "object" ? storedSettings : {};
+    const merged = {
+      ...(backendDefaults || {}),
+      ...stored,
+    };
+
+    const backendBinary = String((backendDefaults && backendDefaults.binary_path) || "").trim();
+    const storedBinary = String(stored.binary_path || "").trim();
+    if (backendBinary && backendBinary !== "./bin/cyanrip" && storedBinary === "./bin/cyanrip") {
+      merged.binary_path = backendBinary;
+    }
+
+    const backendWorkdir = String((backendDefaults && backendDefaults.working_directory) || "").trim();
+    const storedWorkdir = String(stored.working_directory || "").trim();
+    if (backendWorkdir && backendWorkdir !== "./output" && storedWorkdir === "./output") {
+      merged.working_directory = backendWorkdir;
+    }
+
+    return merged;
+  }
+
   async function saveSettings() {
     clearError();
 
     const updated = {
       ...state.settings,
-      binary_path: el("settings-binary-path").value.trim() || "./bin/cyanrip",
-      working_directory: el("settings-working-directory").value.trim() || "./output",
+      binary_path: el("settings-binary-path").value.trim() || DEFAULT_RUNTIME_SETTINGS().binary_path,
+      working_directory: el("settings-working-directory").value.trim() || DEFAULT_RUNTIME_SETTINGS().working_directory,
       language: normalizeLocale(el("settings-language").value) || "en",
     };
 
@@ -939,9 +975,10 @@
     } catch (error) {
       const payload = error && typeof error === "object" ? error.payload : null;
       const releaseCandidates = extractReleaseCandidatesFromError(error);
+      const noReleaseUrl = extractNoReleaseUrlFromError(error);
       if (payload && payload.session) {
         applySessionSnapshot(payload.session);
-      } else if (releaseCandidates.length > 0) {
+      } else if (releaseCandidates.length > 0 || noReleaseUrl) {
         applySessionSnapshot({
           id: state.session.id,
           phase: "scan_error",
@@ -951,6 +988,8 @@
       }
       if (releaseCandidates.length > 0) {
         showReleaseCandidates(releaseCandidates);
+      } else if (noReleaseUrl) {
+        showNoReleaseFound(noReleaseUrl);
       }
       const message = String((error && error.message) || "");
       if (message.toLowerCase().includes("abgebrochen") || message.toLowerCase().includes("cancel")) {
@@ -970,7 +1009,7 @@
   async function startJob() {
     clearError();
     if (!["post_scan", "post_rip"].includes(currentWorkflowPhase().name)) {
-      showError(t("error.scanRequired"));
+      showError(localizedError("error.scanRequired"));
       return;
     }
 
@@ -1029,7 +1068,7 @@
 
     const devicePath = resolveDevicePathForEject();
     if (devicePath === null) {
-      showError(t("error.ejectAutoAmbiguous"));
+      showError(localizedError("error.ejectAutoAmbiguous"));
       return;
     }
 
@@ -1082,10 +1121,19 @@
 
   function startStatusStream() {
     if (state.websocketAvailable) {
+      ensureRpcWebSocket().catch((error) => {
+        if (!state.httpFallbackEnabled) {
+          showError(error);
+        }
+      });
       connectStatusWebSocket();
       return;
     }
-    startStatusPolling();
+    if (state.httpFallbackEnabled) {
+      startStatusPolling();
+      return;
+    }
+    showError(localizedError("error.websocketRequired"));
   }
 
   function startStatusPolling() {
@@ -1106,7 +1154,11 @@
 
   function connectStatusWebSocket() {
     if (!state.websocketAvailable) {
-      startStatusPolling();
+      if (state.httpFallbackEnabled) {
+        startStatusPolling();
+      } else {
+        showError(localizedError("error.websocketRequired"));
+      }
       return;
     }
     if (state.ws) {
@@ -1159,13 +1211,17 @@
 
   function scheduleStatusReconnect() {
     if (!state.websocketAvailable) {
-      startStatusPolling();
+      if (state.httpFallbackEnabled) {
+        startStatusPolling();
+      }
       return;
     }
     if (state.wsReconnectTimer !== null) {
       return;
     }
-    startStatusPolling();
+    if (state.httpFallbackEnabled) {
+      startStatusPolling();
+    }
     state.wsReconnectTimer = window.setTimeout(() => {
       state.wsReconnectTimer = null;
       if (state.ws) {
@@ -1460,9 +1516,21 @@
     return out;
   }
 
+  function extractNoReleaseUrlFromError(error) {
+    const payload = error && typeof error === "object" ? error.payload : null;
+    if (!payload || payload.error_kind !== "no_release_found") {
+      return "";
+    }
+    const explicit = String(payload.musicbrainz_submission_url || "").trim();
+    if (explicit) {
+      return explicit;
+    }
+    const sourceText = `${payload.output_preview || ""}\n${payload.output_snippet || ""}\n${error.message || ""}`;
+    const match = sourceText.match(/https:\/\/musicbrainz\.org\/cdtoc\/attach\?[^\s<>"']+/i);
+    return match ? match[0] : "";
+  }
+
   function showReleaseCandidates(candidates) {
-    const wrap = el("release-choice");
-    const select = el("release-candidate-select");
     const options = [];
     const seen = new Set();
     (candidates || []).forEach((entry) => {
@@ -1484,22 +1552,79 @@
       return;
     }
 
-    select.innerHTML = "";
-    options.forEach((entry) => {
-      const option = document.createElement("option");
-      option.value = entry.id;
-      option.textContent = entry.label;
-      select.appendChild(option);
-    });
+    state.scanIssue = {
+      kind: "release_selection_required",
+      releaseCandidates: options,
+      musicbrainzUrl: "",
+    };
+    renderScanIssue();
+  }
 
-    wrap.classList.remove("is-hidden");
+  function showNoReleaseFound(url) {
+    state.scanIssue = {
+      kind: "no_release_found",
+      releaseCandidates: [],
+      musicbrainzUrl: String(url || "").trim(),
+    };
+    renderScanIssue();
+  }
+
+  function renderScanIssue() {
+    const wrap = el("release-choice");
+    if (!wrap) {
+      return;
+    }
+
+    const kind = state.scanIssue && state.scanIssue.kind;
+    if (!kind) {
+      wrap.classList.add("is-hidden");
+      return;
+    }
+
+    const title = el("scan-resolution-title");
+    const note = el("scan-resolution-note");
+    const releaseControls = el("release-choice-controls");
+    const noReleaseControls = el("no-release-controls");
+    const select = el("release-candidate-select");
+
+    if (kind === "release_selection_required") {
+      title.textContent = t("disc.releaseChoice.title");
+      note.textContent = t("disc.releaseChoice.note");
+      releaseControls.classList.remove("is-hidden");
+      noReleaseControls.classList.add("is-hidden");
+
+      select.innerHTML = "";
+      (state.scanIssue.releaseCandidates || []).forEach((entry) => {
+        const option = document.createElement("option");
+        option.value = entry.id;
+        option.textContent = entry.label;
+        select.appendChild(option);
+      });
+      wrap.classList.remove("is-hidden");
+      return;
+    }
+
+    if (kind === "no_release_found") {
+      const url = String(state.scanIssue.musicbrainzUrl || "").trim();
+      title.textContent = t("disc.noRelease.title");
+      note.textContent = t("disc.noRelease.note");
+      releaseControls.classList.add("is-hidden");
+      noReleaseControls.classList.remove("is-hidden");
+      const link = el("no-release-link");
+      link.href = url || "#";
+      link.textContent = url || t("disc.noRelease.noLink");
+      link.title = url || "";
+      wrap.classList.remove("is-hidden");
+    }
   }
 
   function hideReleaseCandidates() {
-    const wrap = el("release-choice");
-    if (wrap) {
-      wrap.classList.add("is-hidden");
-    }
+    state.scanIssue = {
+      kind: null,
+      releaseCandidates: [],
+      musicbrainzUrl: "",
+    };
+    renderScanIssue();
     const select = el("release-candidate-select");
     if (select) {
       select.innerHTML = "";
@@ -1514,6 +1639,30 @@
     el("release").value = selected;
     updateDiscMetaDirtyIndicators();
     await scanDisc();
+  }
+
+  async function scanWithoutMusicBrainz() {
+    el("enable-mb").checked = false;
+    const toggle = document.querySelector(".binary-toggle[data-binary-toggle='enable-mb']");
+    if (toggle) {
+      refreshBinaryToggleRow(toggle, false);
+    }
+    debouncePreview();
+    saveUiPreferencesDebounced();
+    await scanDisc();
+  }
+
+  async function copyNoReleaseLink() {
+    const url = String((state.scanIssue && state.scanIssue.musicbrainzUrl) || "").trim();
+    if (!url || !navigator.clipboard) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage("action-message", t("disc.noRelease.copied"));
+    } catch (_) {
+      setMessage("action-message", t("disc.noRelease.copyFailed"));
+    }
   }
 
   function renderDiscSummary() {
@@ -3848,6 +3997,13 @@
     renderSchemeTokens();
     renderSchemeActiveSummary();
     renderActiveSchemeComposer();
+    renderScanIssue();
+    const errorNode = el("error-box");
+    if (errorNode && errorNode.dataset.errorKey) {
+      setMessage("error-box", t(errorNode.dataset.errorKey));
+    } else {
+      updateStatusErrorMarquee();
+    }
     wireHintViewportBehavior();
   }
 
@@ -4004,18 +4160,262 @@
   }
 
   function setMessage(id, message) {
-    el(id).textContent = message || "";
+    const node = el(id);
+    if (!node) {
+      return;
+    }
+    if (id !== "error-box") {
+      node.textContent = message || "";
+      return;
+    }
+
+    const text = String(message || "");
+    node.dataset.errorText = text;
+    node.innerHTML = "";
+    if (!text) {
+      node.classList.remove("is-marquee");
+      node.style.removeProperty("--marquee-duration");
+      return;
+    }
+    const span = document.createElement("span");
+    span.className = "marquee-text";
+    span.textContent = text;
+    node.appendChild(span);
+    updateStatusErrorMarquee();
   }
 
   function clearError() {
+    const node = el("error-box");
+    if (node) {
+      delete node.dataset.errorKey;
+      delete node.dataset.errorText;
+    }
     setMessage("error-box", "");
   }
 
   function showError(message) {
-    setMessage("error-box", message || "");
+    const node = el("error-box");
+    const localized = localizeErrorMessage(message);
+    if (node) {
+      const key = errorTranslationKey(message);
+      if (key) {
+        node.dataset.errorKey = key;
+      } else {
+        delete node.dataset.errorKey;
+      }
+    }
+    setMessage("error-box", localized);
+  }
+
+  function localizedError(key) {
+    const err = new Error(t(key));
+    err.payload = { error_key: key };
+    return err;
+  }
+
+  function localizeErrorMessage(error) {
+    const key = errorTranslationKey(error);
+    if (key) {
+      return t(key);
+    }
+    if (error instanceof Error) {
+      return error.message || t("error.generic");
+    }
+    return String(error || "");
+  }
+
+  function errorTranslationKey(error) {
+    if (typeof error === "string") {
+      return "";
+    }
+    const payload = error && typeof error === "object" ? error.payload : null;
+    if (payload && typeof payload.error_key === "string" && payload.error_key.trim()) {
+      return payload.error_key.trim();
+    }
+    const kind = payload && typeof payload.error_kind === "string" ? payload.error_kind : "";
+    if (kind === "release_selection_required") {
+      return "error.releaseSelectionRequired";
+    }
+    if (kind === "no_release_found") {
+      return "error.noReleaseFound";
+    }
+    return "";
+  }
+
+  function updateStatusErrorMarquee() {
+    const node = el("error-box");
+    if (!node || !node.textContent.trim()) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      const span = node.querySelector(".marquee-text");
+      if (!span) {
+        return;
+      }
+      const shouldScroll = span.scrollWidth > node.clientWidth;
+      node.classList.toggle("is-marquee", shouldScroll);
+      if (shouldScroll) {
+        const duration = Math.max(10, Math.min(34, Math.round(span.scrollWidth / 28)));
+        node.style.setProperty("--marquee-duration", `${duration}s`);
+      } else {
+        node.style.removeProperty("--marquee-duration");
+      }
+    });
   }
 
   async function apiGet(url) {
+    if (isApiUrl(url) && !state.websocketAvailable && !state.httpFallbackEnabled) {
+      throw localizedError("error.websocketRequired");
+    }
+    if (shouldUseWebSocketRpc(url)) {
+      try {
+        return await wsRpc("GET", url, null);
+      } catch (error) {
+        if (!state.httpFallbackEnabled) {
+          throw error;
+        }
+      }
+    }
+    return httpGet(url);
+  }
+
+  async function apiPost(url, body) {
+    if (isApiUrl(url) && !state.websocketAvailable && !state.httpFallbackEnabled) {
+      throw localizedError("error.websocketRequired");
+    }
+    if (shouldUseWebSocketRpc(url)) {
+      try {
+        return await wsRpc("POST", url, body || {});
+      } catch (error) {
+        if (!state.httpFallbackEnabled) {
+          throw error;
+        }
+      }
+    }
+    return httpPost(url, body);
+  }
+
+  function shouldUseWebSocketRpc(url) {
+    if (!state.websocketAvailable) {
+      return false;
+    }
+    const path = String(url || "").split("?", 1)[0];
+    return path.startsWith("/api/");
+  }
+
+  function isApiUrl(url) {
+    return String(url || "").split("?", 1)[0].startsWith("/api/");
+  }
+
+  async function wsRpc(method, url, body) {
+    const socket = await ensureRpcWebSocket();
+    const requestId = ++state.rpcRequestId;
+    const payload = {
+      type: "rpc",
+      id: requestId,
+      method,
+      url,
+      body: body || {},
+    };
+
+    return new Promise((resolve, reject) => {
+      state.rpcPending.set(requestId, { resolve, reject });
+      try {
+        socket.send(JSON.stringify(payload));
+      } catch (error) {
+        state.rpcPending.delete(requestId);
+        reject(error);
+      }
+    });
+  }
+
+  function ensureRpcWebSocket() {
+    if (!state.websocketAvailable) {
+      return Promise.reject(localizedError("error.websocketRequired"));
+    }
+    if (state.rpcWs && state.rpcWs.readyState === WebSocket.OPEN) {
+      return Promise.resolve(state.rpcWs);
+    }
+    if (state.rpcConnectPromise) {
+      return state.rpcConnectPromise;
+    }
+
+    state.rpcConnectPromise = new Promise((resolve, reject) => {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const socket = new WebSocket(`${protocol}//${window.location.host}/ws/rpc`);
+      state.rpcWs = socket;
+      let opened = false;
+
+      const fail = (error) => {
+        if (state.rpcWs === socket) {
+          state.rpcWs = null;
+        }
+        state.rpcConnectPromise = null;
+        reject(error instanceof Error ? error : localizedError("error.websocketRequired"));
+      };
+
+      socket.addEventListener("open", () => {
+        opened = true;
+        state.rpcConnectPromise = null;
+        resolve(socket);
+      });
+
+      socket.addEventListener("message", (event) => {
+        let response = {};
+        try {
+          response = JSON.parse(String(event.data || "{}"));
+        } catch (_) {
+          return;
+        }
+        if (!response || response.type !== "rpc") {
+          return;
+        }
+        const pending = state.rpcPending.get(response.id);
+        if (!pending) {
+          return;
+        }
+        state.rpcPending.delete(response.id);
+        const body = response.body || {};
+        if (response.ok) {
+          pending.resolve(body);
+          return;
+        }
+        const message = body && body.error ? body.error : `${response.status || 500}`;
+        const err = new Error(message);
+        err.payload = body;
+        err.status = response.status;
+        pending.reject(err);
+      });
+
+      socket.addEventListener("error", () => {
+        socket.close();
+      });
+
+      socket.addEventListener("close", () => {
+        if (!opened) {
+          fail(localizedError("error.websocketRequired"));
+          return;
+        }
+        if (state.rpcWs === socket) {
+          state.rpcWs = null;
+        }
+        state.rpcConnectPromise = null;
+        state.rpcPending.forEach(({ reject }) => reject(localizedError("error.websocketRequired")));
+        state.rpcPending.clear();
+      });
+
+      window.setTimeout(() => {
+        if (socket.readyState !== WebSocket.OPEN) {
+          fail(localizedError("error.websocketRequired"));
+          socket.close();
+        }
+      }, 5000);
+    });
+
+    return state.rpcConnectPromise;
+  }
+
+  async function httpGet(url) {
     const response = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -4024,7 +4424,7 @@
     return handleApiResponse(response);
   }
 
-  async function apiPost(url, body) {
+  async function httpPost(url, body) {
     const response = await fetch(url, {
       method: "POST",
       headers: {

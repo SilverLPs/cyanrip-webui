@@ -96,6 +96,16 @@
       "apply": "Release uebernehmen und neu scannen",
       "note": "Die gewaehlte Release-ID wird ins Release-Feld uebernommen und der Scan erneut gestartet."
     },
+    "noRelease": {
+      "title": "Für diese Disc wurde kein MusicBrainz-Release gefunden.",
+      "note": "Öffne oder kopiere den MusicBrainz-Link und scanne nach dem Eintragen der Disc-ID erneut. Alternativ kannst du ohne MusicBrainz scannen; die Option bleibt dann auch für den Rip deaktiviert.",
+      "copy": "Link kopieren",
+      "copied": "MusicBrainz-Link kopiert.",
+      "copyFailed": "MusicBrainz-Link konnte nicht kopiert werden.",
+      "rescan": "Erneut scannen",
+      "scanWithoutMb": "Ohne MusicBrainz scannen",
+      "noLink": "MusicBrainz-Link nicht verfügbar."
+    },
     "unknownAlbum": "Unbekanntes Album",
     "unknownArtist": "Unbekannter Artist"
   },
@@ -301,6 +311,10 @@
     "paranoiaRequired": "Im numerischen Paranoia-Modus muss ein nicht-negativer Ganzzahlwert gesetzt sein.",
     "paranoiaInvalid": "Der numerische Paranoia-Wert muss eine nicht-negative Ganzzahl sein.",
     "scanRequired": "Zum Rippen muss die Disc zuerst gescannt werden.",
-    "ejectAutoAmbiguous": "Automatisches Auswerfen ist bei mehreren Laufwerken nicht eindeutig. Bitte zuerst ein konkretes Laufwerk auswählen."
+    "ejectAutoAmbiguous": "Automatisches Auswerfen ist bei mehreren Laufwerken nicht eindeutig. Bitte zuerst ein konkretes Laufwerk auswählen.",
+    "releaseSelectionRequired": "Für diese Disc-ID wurden mehrere Releases gefunden. Bitte die richtige Release-ID auswählen und erneut scannen.",
+    "noReleaseFound": "Für diese Disc wurde kein MusicBrainz-Release gefunden. Nutze den MusicBrainz-Link oder scanne ohne MusicBrainz.",
+    "websocketRequired": "WebSocket-Kommunikation ist erforderlich. Starte mit --enable-http-fallback neu, um HTTP-Fallback zu erlauben.",
+    "generic": "Es ist ein Fehler aufgetreten."
   }
 }

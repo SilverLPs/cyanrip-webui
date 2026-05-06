@@ -44,8 +44,10 @@ pyinstaller \
   --collect-submodules wsproto \
   --collect-submodules pystray \
   --collect-submodules PIL \
+  --collect-all PySide6 \
   --add-data "${ROOT_DIR}/webui/templates:webui/templates" \
   --add-data "${ROOT_DIR}/webui/static:webui/static" \
+  --add-data "${ROOT_DIR}/packaging:packaging" \
   "${ROOT_DIR}/launcher.py"
 
 RUNTIME_SRC_DIR="${PYI_DIST_DIR}/${APP_ID}"
@@ -57,8 +59,15 @@ if [[ ! -d "${RUNTIME_SRC_DIR}" ]]; then
 fi
 
 RUNTIME_DST_DIR="${APPDIR}/usr/lib/${APP_ID}"
-mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}"
+mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}" "${APPDIR}/usr/share/applications" "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
 cp -a "${RUNTIME_SRC_DIR}/." "${RUNTIME_DST_DIR}/"
+
+if [[ ! -x "${ROOT_DIR}/bin/cyanrip" ]]; then
+  echo "Bundled cyanrip binary missing or not executable: ${ROOT_DIR}/bin/cyanrip"
+  exit 1
+fi
+cp "${ROOT_DIR}/bin/cyanrip" "${APPDIR}/usr/bin/cyanrip"
+chmod +x "${APPDIR}/usr/bin/cyanrip"
 
 RUNTIME_BIN="${RUNTIME_DST_DIR}/${APP_ID}"
 if [[ ! -x "${RUNTIME_BIN}" ]]; then
@@ -82,13 +91,24 @@ EOF
 chmod +x "${APPDIR}/usr/bin/${APP_ID}"
 
 cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/${APP_ID}.desktop"
+cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/usr/share/applications/${APP_ID}.desktop"
 cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/${APP_ID}.svg"
+cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/${APP_ID}.svg"
 ln -s "${APP_ID}.svg" "${APPDIR}/.DirIcon"
 
 cat >"${APPDIR}/AppRun" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
+export CYANRIP_WEBUI_APPDIR="${HERE}"
+export CYANRIP_WEBUI_BUNDLED_CYANRIP="${HERE}/usr/bin/cyanrip"
+export CYANRIP_WEBUI_ICON="${HERE}/usr/share/icons/hicolor/scalable/apps/cyanrip-webui.svg"
+if [[ -n "${APPIMAGE:-}" ]]; then
+  APPIMAGE_DIR="$(dirname "$(readlink -f "${APPIMAGE}")")"
+else
+  APPIMAGE_DIR="${HERE}"
+fi
+export CYANRIP_WEBUI_DEFAULT_OUTPUT_DIR="${APPIMAGE_DIR}/output"
 exec "${HERE}/usr/bin/cyanrip-webui" "$@"
 EOF
 chmod +x "${APPDIR}/AppRun"
