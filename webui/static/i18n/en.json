@@ -246,7 +246,7 @@
   },
   "hint": {
     "settingsLanguage": "Sets the interface language for all labels, hints, and status texts. This changes only the WebUI and does not affect file metadata. App default is English (en). The value is stored globally in settings.",
-    "settingsBinaryPath": "Defines which cyanrip executable is used for scan and rip actions. The app stores this as a global runtime setting and uses it for all command previews. Default is ./bin/cyanrip. If this path is wrong, scan and rip cannot start.",
+    "settingsBinaryPath": "Defines which cyanrip executable is used for scan and rip actions. The app stores this as a global runtime setting and uses it for all command previews. Source-tree runs default to ./bin/cyanrip; AppImage builds use the bundled binary inside the AppImage. If this path is wrong, scan and rip cannot start.",
     "settingsWorkingDirectory": "Global base directory for this installation of the WebUI. It is used when output mode is set to 'Use settings directory' and as fallback for operations that need a working path. Default is ./output. You can still override output per run in the Output section.",
     "settingsBinaryProbe": "Runs cyanrip with -V to verify that the binary is reachable and executable. The result also shows the detected version so you can confirm which build is active. This check does not start a scan or rip. It only validates runtime availability.",
     "discAlbum": "Manual album title override for this disc session. Only fields you actually changed are sent to cyanrip via --album-metadata, so unchanged scan metadata stays untouched. Use this when database metadata is missing or incorrect. Edited fields are highlighted in the UI.",
@@ -314,6 +314,7 @@
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
+    "scanFailedExitCode": "CD scan failed (exit code {code}).",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
     "generic": "An error occurred."
   }

@@ -246,7 +246,7 @@
   },
   "hint": {
     "settingsLanguage": "Legt die Sprache der Oberfläche für Labels, Hinweise und Statusmeldungen fest. Diese Einstellung betrifft nur die WebUI und nicht die Audio-Metadaten. Standard ist Englisch (en). Der Wert wird global in den Einstellungen gespeichert.",
-    "settingsBinaryPath": "Hier definierst du, welche cyanrip-Binary für Scan und Rip verwendet wird. Die App nutzt diesen Pfad auch für die Command-Preview. Standard ist ./bin/cyanrip. Ist der Pfad falsch, können Scan und Rip nicht starten.",
+    "settingsBinaryPath": "Hier definierst du, welche cyanrip-Binary für Scan und Rip verwendet wird. Die App nutzt diesen Pfad auch für die Command-Preview. Source-Tree-Starts nutzen standardmäßig ./bin/cyanrip; AppImage-Builds nutzen die im AppImage enthaltene Binary. Ist der Pfad falsch, können Scan und Rip nicht starten.",
     "settingsWorkingDirectory": "Globales Basis-Arbeitsverzeichnis dieser WebUI-Instanz. Es wird genutzt, wenn beim Output 'Settings-Verzeichnis nutzen' aktiv ist, und als Fallback für Aktionen mit Pfadangabe. Standard ist ./output. Für einzelne Runs kannst du den Output trotzdem manuell überschreiben.",
     "settingsBinaryProbe": "Startet cyanrip mit -V, um Erreichbarkeit und Ausführbarkeit der Binary zu prüfen. Zusätzlich wird die erkannte Version angezeigt. Dieser Check startet keinen Scan und keinen Rip. Er dient nur der Laufzeitprüfung.",
     "discAlbum": "Manuelle Album-Überschreibung für die aktuelle Disc-Session. Die App übergibt nur echte Änderungen via --album-metadata, unveränderte Scanwerte bleiben erhalten. So vermeidest du unnötige oder falsche Overrides. Geänderte Felder werden visuell markiert.",
@@ -314,6 +314,7 @@
     "ejectAutoAmbiguous": "Automatisches Auswerfen ist bei mehreren Laufwerken nicht eindeutig. Bitte zuerst ein konkretes Laufwerk auswählen.",
     "releaseSelectionRequired": "Für diese Disc-ID wurden mehrere Releases gefunden. Bitte die richtige Release-ID auswählen und erneut scannen.",
     "noReleaseFound": "Für diese Disc wurde kein MusicBrainz-Release gefunden. Nutze den MusicBrainz-Link oder scanne ohne MusicBrainz.",
+    "scanFailedExitCode": "CD-Scan fehlgeschlagen (Exit-Code {code}).",
     "websocketRequired": "WebSocket-Kommunikation ist erforderlich. Starte mit --enable-http-fallback neu, um HTTP-Fallback zu erlauben.",
     "generic": "Es ist ein Fehler aufgetreten."
   }

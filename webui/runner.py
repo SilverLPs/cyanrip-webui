@@ -24,9 +24,9 @@ _ETA_RE = re.compile(r",\s+ETA\s+-\s+(.+?)(?:,\s+errors\s+-\s+\d+)?$", re.IGNORE
 _DURATION_RE = re.compile(r"^Duration:\s+(.+)$", re.IGNORECASE)
 _TITLE_RE = re.compile(r"^title:\s+(.+)$", re.IGNORECASE)
 _ARTIST_RE = re.compile(r"^artist:\s+(.+)$", re.IGNORECASE)
-_ACCURIP_RE = re.compile(r"^Accurip:\s+(.+?)(?:\s+\(max\s+confidence:\s*(\d+)\))?$", re.IGNORECASE)
-_ACCURIP_DETAIL_RE = re.compile(r"^Accurip\s+v[12]:\s+[0-9A-F]+(?:\s+\(([^)]*)\))?", re.IGNORECASE)
-_ACCURIP_CONF_RE = re.compile(r"confidence\s+(\d+)", re.IGNORECASE)
+_ACCURIP_RE = re.compile(r"^Acc(?:u|urate)rip:\s+(.+?)(?:\s+\(max\s+confidence:\s*(\d+)\))?$", re.IGNORECASE)
+_ACCURIP_DETAIL_RE = re.compile(r"^Acc(?:u|urate)rip\s+v[12]:\s+\S+(?:\s+\(([^)]*)\))?", re.IGNORECASE)
+_ACCURIP_CONF_RE = re.compile(r"confidence[:\s]+(\d+)", re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -389,9 +389,14 @@ class CyanripJobRunner:
         if accurip_detail_match:
             detail = (accurip_detail_match.group(1) or "").strip()
             confidence = None
-            if detail:
-                conf_match = _ACCURIP_CONF_RE.search(detail)
-                confidence = self._normalize_optional_int(conf_match.group(1) if conf_match else None)
+            if not detail:
+                return
+
+            conf_match = _ACCURIP_CONF_RE.search(detail)
+            confidence = self._normalize_optional_int(conf_match.group(1) if conf_match else None)
+            if confidence is None and "full confidence" in detail.lower():
+                current = self._rip_tracks.get(self._active_track_no)
+                confidence = self._normalize_optional_int(current.get("accurip_max_confidence") if current else None)
             self._upsert_rip_track(
                 self._active_track_no,
                 accurip_text=detail if detail else None,
@@ -554,6 +559,7 @@ class CyanripJobRunner:
         if "accurip_max_confidence" in patch:
             row["accurip_max_confidence"] = self._normalize_optional_int(patch["accurip_max_confidence"])
 
+        self._reconcile_accurip_confidence(row)
         row["accurip"] = self._format_accurip(row)
 
         if self._rip_meta_disc_tracks is None and self._rip_tracks:
@@ -679,11 +685,21 @@ class CyanripJobRunner:
         max_confidence = CyanripJobRunner._normalize_optional_int(track.get("accurip_max_confidence"))
         text = str(track.get("accurip_text") or "").strip()
 
+        if confidence is not None and (max_confidence is None or confidence > max_confidence):
+            max_confidence = confidence
+
         if confidence is not None and max_confidence is not None:
             return f"{confidence}/{max_confidence}"
         if confidence is not None:
             return str(confidence)
         return text
+
+    @staticmethod
+    def _reconcile_accurip_confidence(track: dict[str, Any]) -> None:
+        confidence = CyanripJobRunner._normalize_optional_int(track.get("accurip_confidence"))
+        max_confidence = CyanripJobRunner._normalize_optional_int(track.get("accurip_max_confidence"))
+        if confidence is not None and (max_confidence is None or confidence > max_confidence):
+            track["accurip_max_confidence"] = confidence
 
     @staticmethod
     def _resolve_workdir(working_directory: str | None) -> str:

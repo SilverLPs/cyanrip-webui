@@ -68,6 +68,22 @@ Summary:
         self.assertEqual(track["accurip_max_confidence"], 7)
         self.assertEqual(track["accurip"], "7/7")
 
+    def test_accurip_v1_confidence_can_exceed_v2_max_confidence(self) -> None:
+        raw = """
+Track 1 ripped and encoded successfully!
+Summary:
+  AccurateRip:   disc found in database (max confidence: 2)
+    AccurateRip v1:  A1B2C3D4 (accurately ripped, confidence 12)
+    AccurateRip v2:  not found
+""".strip()
+
+        parsed = parse_scan_output(raw)
+        track = parsed["tracks"][0]
+
+        self.assertEqual(track["accurip_confidence"], 12)
+        self.assertEqual(track["accurip_max_confidence"], 12)
+        self.assertEqual(track["accurip"], "12/12")
+
 
 if __name__ == "__main__":
     unittest.main()

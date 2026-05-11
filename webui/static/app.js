@@ -1890,7 +1890,9 @@
   function findDiscMaxAccuripConfidence() {
     let maxConfidence = null;
     state.trackRows.forEach((row) => {
-      const candidate = normalizeOptionalInt(row.accuripMaxConfidence);
+      const confidence = normalizeOptionalInt(row.accuripConfidence);
+      const maxCandidate = normalizeOptionalInt(row.accuripMaxConfidence);
+      const candidate = confidence !== null && (maxCandidate === null || confidence > maxCandidate) ? confidence : maxCandidate;
       if (candidate === null) {
         return;
       }
@@ -2120,8 +2122,12 @@
 
   function formatAccuripCell(row) {
     const confidence = normalizeOptionalInt(row.accuripConfidence);
-    const maxConfidence = normalizeOptionalInt(row.accuripMaxConfidence);
+    let maxConfidence = normalizeOptionalInt(row.accuripMaxConfidence);
     const text = String(row.accuripText || "").trim();
+
+    if (confidence !== null && (maxConfidence === null || confidence > maxConfidence)) {
+      maxConfidence = confidence;
+    }
 
     if (confidence !== null && maxConfidence !== null) {
       return `${confidence}/${maxConfidence}`;
@@ -2891,7 +2897,7 @@
         if (results.some((item) => item.status === "rejected")) {
           const firstError = results.find((item) => item.status === "rejected");
           if (firstError && firstError.reason) {
-            showError(firstError.reason.message || String(firstError.reason));
+            showError(firstError.reason);
           }
         }
       })
@@ -3508,10 +3514,10 @@
     }
 
     if (parsed.settings && typeof parsed.settings === "object") {
-      applySettings({
+      applySettings(mergeRuntimeSettings(state.backendDefaults || {}, {
         ...state.settings,
         ...parsed.settings,
-      });
+      }));
     }
 
     setIfDefined("offset", parsed.offset);
@@ -4000,7 +4006,7 @@
     renderScanIssue();
     const errorNode = el("error-box");
     if (errorNode && errorNode.dataset.errorKey) {
-      setMessage("error-box", t(errorNode.dataset.errorKey));
+      setMessage("error-box", t(errorNode.dataset.errorKey, parseDatasetJson(errorNode.dataset.errorVars)));
     } else {
       updateStatusErrorMarquee();
     }
@@ -4041,6 +4047,18 @@
     }
 
     return current;
+  }
+
+  function parseDatasetJson(raw) {
+    if (!raw) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   function parsePregapRules(rawText) {
@@ -4175,6 +4193,7 @@
     if (!text) {
       node.classList.remove("is-marquee");
       node.style.removeProperty("--marquee-duration");
+      node.style.removeProperty("--marquee-distance");
       return;
     }
     const span = document.createElement("span");
@@ -4188,6 +4207,7 @@
     const node = el("error-box");
     if (node) {
       delete node.dataset.errorKey;
+      delete node.dataset.errorVars;
       delete node.dataset.errorText;
     }
     setMessage("error-box", "");
@@ -4195,33 +4215,43 @@
 
   function showError(message) {
     const node = el("error-box");
-    const localized = localizeErrorMessage(message);
+    const translation = errorTranslation(message);
+    const localized = localizeErrorMessage(message, translation);
     if (node) {
-      const key = errorTranslationKey(message);
-      if (key) {
-        node.dataset.errorKey = key;
+      if (translation) {
+        node.dataset.errorKey = translation.key;
+        node.dataset.errorVars = JSON.stringify(translation.vars || {});
       } else {
         delete node.dataset.errorKey;
+        delete node.dataset.errorVars;
       }
     }
     setMessage("error-box", localized);
   }
 
-  function localizedError(key) {
-    const err = new Error(t(key));
-    err.payload = { error_key: key };
+  function localizedError(key, vars = null) {
+    const err = new Error(t(key, vars || null));
+    err.payload = { error_key: key, error_vars: vars || {} };
     return err;
   }
 
-  function localizeErrorMessage(error) {
-    const key = errorTranslationKey(error);
-    if (key) {
-      return t(key);
+  function localizeErrorMessage(error, existingTranslation = null) {
+    const translation = existingTranslation || errorTranslation(error);
+    if (translation) {
+      return t(translation.key, translation.vars || null);
     }
     if (error instanceof Error) {
       return error.message || t("error.generic");
     }
     return String(error || "");
+  }
+
+  function errorTranslation(error) {
+    const key = errorTranslationKey(error);
+    if (key) {
+      return { key, vars: errorTranslationVars(error, key) };
+    }
+    return inferErrorTranslation(error);
   }
 
   function errorTranslationKey(error) {
@@ -4242,6 +4272,26 @@
     return "";
   }
 
+  function errorTranslationVars(error, key) {
+    const payload = error && typeof error === "object" ? error.payload : null;
+    if (payload && payload.error_vars && typeof payload.error_vars === "object") {
+      return payload.error_vars;
+    }
+    if (key === "error.scanFailedExitCode" && payload && payload.returncode !== undefined) {
+      return { code: payload.returncode };
+    }
+    return {};
+  }
+
+  function inferErrorTranslation(error) {
+    const message = error instanceof Error ? error.message : String(error || "");
+    const scanExit = message.match(/^CD-Scan fehlgeschlagen \(Exit-Code (\d+)\)\.?$/i);
+    if (scanExit) {
+      return { key: "error.scanFailedExitCode", vars: { code: scanExit[1] } };
+    }
+    return null;
+  }
+
   function updateStatusErrorMarquee() {
     const node = el("error-box");
     if (!node || !node.textContent.trim()) {
@@ -4255,10 +4305,13 @@
       const shouldScroll = span.scrollWidth > node.clientWidth;
       node.classList.toggle("is-marquee", shouldScroll);
       if (shouldScroll) {
-        const duration = Math.max(10, Math.min(34, Math.round(span.scrollWidth / 28)));
+        const distance = Math.max(0, span.scrollWidth - node.clientWidth + 18);
+        const duration = Math.max(10, Math.min(34, Math.round(distance / 24) + 4));
         node.style.setProperty("--marquee-duration", `${duration}s`);
+        node.style.setProperty("--marquee-distance", `${distance}px`);
       } else {
         node.style.removeProperty("--marquee-duration");
+        node.style.removeProperty("--marquee-distance");
       }
     });
   }

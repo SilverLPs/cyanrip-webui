@@ -18,6 +18,7 @@ try:
         _runtime_data_root,
         _runtime_default_binary_path,
         _runtime_default_output_dir,
+        _resolve_binary_path,
         _scan_config_from_user,
     )
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional test env deps
@@ -110,6 +111,16 @@ class DirectoryBrowseTests(unittest.TestCase):
                 self.assertEqual(data_root, appimage_dir)
                 self.assertEqual(_runtime_default_output_dir(data_root), output_dir)
                 self.assertEqual(_runtime_default_binary_path(), str(binary))
+
+    def test_frozen_source_default_binary_resolves_to_bundled_binary(self) -> None:
+        bundled = "/tmp/.mount_cyanrip/usr/bin/cyanrip"
+
+        with mock.patch("webui.app_factory.APP_IS_FROZEN", True), mock.patch(
+            "webui.app_factory.DEFAULT_BINARY_PATH",
+            bundled,
+        ):
+            self.assertEqual(_resolve_binary_path("./bin/cyanrip"), bundled)
+            self.assertEqual(_resolve_binary_path("bin/cyanrip"), bundled)
 
     def test_extract_release_candidates_from_multi_release_output(self) -> None:
         sample = """

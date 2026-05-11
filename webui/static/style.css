@@ -470,6 +470,11 @@ button.accent {
   background: transparent;
 }
 
+.layout-locked .layout .outputs label,
+.layout-locked .layout .output-pill {
+  cursor: not-allowed;
+}
+
 .layout-locked .layout .toggle-option.is-active:disabled,
 .layout-locked .layout .binary-toggle .toggle-option.is-active:disabled {
   filter: saturate(0.58) brightness(0.88);
@@ -634,7 +639,7 @@ body.layout-locked .layout .panel {
 #error-box.status-error.is-marquee .marquee-text {
   max-width: none;
   min-width: max-content;
-  padding-left: 100%;
+  transform: translateX(0);
   animation: error-marquee var(--marquee-duration, 14s) linear infinite;
 }
 
@@ -2197,8 +2202,14 @@ textarea {
   0% {
     transform: translateX(0);
   }
+  12% {
+    transform: translateX(0);
+  }
+  88% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+  }
   100% {
-    transform: translateX(calc(-100% - 1rem));
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
   }
 }
 

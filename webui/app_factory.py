@@ -556,6 +556,8 @@ def create_app() -> Flask:
             payload_out["error"] = scan_result.get("error") or f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
             if payload_out.get("error_kind") in {"release_selection_required", "no_release_found"}:
                 return jsonify(payload_out), 409
+            payload_out["error_key"] = "error.scanFailedExitCode"
+            payload_out["error_vars"] = {"code": returncode}
             return jsonify(payload_out), 422
 
         return jsonify(payload_out), 200
@@ -1684,6 +1686,9 @@ def _resolve_binary_path(raw_value: str) -> str:
     value = (raw_value or "").strip()
     if not value:
         raise ValueError("Pfad zur cyanrip-Binary fehlt.")
+
+    if APP_IS_FROZEN and value in {"./bin/cyanrip", "bin/cyanrip"} and DEFAULT_BINARY_PATH != "./bin/cyanrip":
+        return DEFAULT_BINARY_PATH
 
     candidate = Path(value).expanduser()
     if candidate.is_absolute():

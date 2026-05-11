@@ -11,9 +11,9 @@ _TRACK_DONE_RE = re.compile(r"^Track\s+(\d+)\s+ripped and encoded successfully!$
 _METADATA_LINE_RE = re.compile(r"^([A-Za-z0-9_]+):\s+(.*)$")
 _DURATION_RE = re.compile(r"^Duration:\s+(.+)$")
 _EAC_RE = re.compile(r"^EAC CRC32:\s+([0-9A-F]+)", re.IGNORECASE)
-_ACCURIP_BASE_RE = re.compile(r"^Accurip:\s+(.+?)(?:\s+\(max confidence:\s*(\d+)\))?$", re.IGNORECASE)
-_ACCURIP_DETAIL_RE = re.compile(r"^Accurip v[12]:\s+[0-9A-F]+(?:\s+\(([^)]*)\))?", re.IGNORECASE)
-_ACCURIP_CONF_RE = re.compile(r"confidence\s+(\d+)", re.IGNORECASE)
+_ACCURIP_BASE_RE = re.compile(r"^Acc(?:u|urate)rip:\s+(.+?)(?:\s+\(max confidence:\s*(\d+)\))?$", re.IGNORECASE)
+_ACCURIP_DETAIL_RE = re.compile(r"^Acc(?:u|urate)rip v[12]:\s+\S+(?:\s+\(([^)]*)\))?", re.IGNORECASE)
+_ACCURIP_CONF_RE = re.compile(r"confidence[:\s]+(\d+)", re.IGNORECASE)
 
 
 def parse_scan_output(raw_output: str) -> dict[str, Any]:
@@ -113,6 +113,7 @@ def parse_scan_output(raw_output: str) -> dict[str, Any]:
             max_conf = accurip_base_match.group(2)
             if max_conf:
                 current_track["accurip_max_confidence"] = int(max_conf)
+                _reconcile_accurip_confidence(current_track)
             continue
 
         accurip_detail_match = _ACCURIP_DETAIL_RE.match(stripped)
@@ -123,6 +124,9 @@ def parse_scan_output(raw_output: str) -> dict[str, Any]:
                 conf_match = _ACCURIP_CONF_RE.search(detail)
                 if conf_match:
                     current_track["accurip_confidence"] = int(conf_match.group(1))
+                elif "full confidence" in detail.lower() and current_track["accurip_max_confidence"] is not None:
+                    current_track["accurip_confidence"] = current_track["accurip_max_confidence"]
+                _reconcile_accurip_confidence(current_track)
             continue
 
     tracks.sort(key=lambda item: int(item["number"]))
@@ -143,8 +147,18 @@ def _format_accurip(track: dict[str, Any]) -> str:
     max_confidence = track.get("accurip_max_confidence")
     text = (track.get("accurip_text") or "").strip()
 
+    if confidence is not None and (max_confidence is None or confidence > max_confidence):
+        max_confidence = confidence
+
     if confidence is not None and max_confidence is not None:
         return f"{confidence}/{max_confidence}"
     if confidence is not None:
         return str(confidence)
     return text
+
+
+def _reconcile_accurip_confidence(track: dict[str, Any]) -> None:
+    confidence = track.get("accurip_confidence")
+    max_confidence = track.get("accurip_max_confidence")
+    if confidence is not None and (max_confidence is None or confidence > max_confidence):
+        track["accurip_max_confidence"] = confidence

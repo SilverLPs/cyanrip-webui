@@ -39,6 +39,7 @@ class I18nTests(unittest.TestCase):
         files = [
             ROOT / "webui" / "templates" / "index.html",
             ROOT / "webui" / "static" / "app.js",
+            ROOT / "webui" / "app_factory.py",
         ]
         referenced: set[str] = set()
         for path in files:
@@ -46,6 +47,7 @@ class I18nTests(unittest.TestCase):
             referenced.update(re.findall(r'data-(?:i18n(?:-[a-z]+)?|tip-key)="([^"]+)"', text))
             referenced.update(re.findall(r'\bt\(\s*"([^"]+)"', text))
             referenced.update(re.findall(r'\blocalizedError\(\s*"([^"]+)"', text))
+            referenced.update(re.findall(r'error_key["\']?(?:\])?\s*[:=]\s*["\']([^"\']+)["\']', text))
 
         for locale in ("en", "de"):
             keys = _flatten(_load_locale(locale))

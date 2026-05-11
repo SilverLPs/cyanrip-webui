@@ -86,6 +86,36 @@ class RunnerStateTests(unittest.TestCase):
         self.assertEqual(track["status"], "done")
         self.assertEqual(track["progress"], 100.0)
 
+    def test_runtime_accurip_v1_confidence_overrides_lower_max_confidence(self) -> None:
+        runner = CyanripJobRunner()
+        runner.update_scan_result(
+            {},
+            [
+                {
+                    "number": 1,
+                    "title": "Track 01",
+                    "artist": "",
+                    "duration": "",
+                    "status": "detected",
+                    "progress": 0,
+                    "accurip_text": "",
+                    "accurip_confidence": None,
+                    "accurip_max_confidence": 2,
+                }
+            ],
+            returncode=0,
+        )
+
+        runner._append_log("Track 1 ripped and encoded successfully!")
+        runner._append_log("AccurateRip: disc found in database (max confidence: 2)")
+        runner._append_log("AccurateRip v1: A1B2C3D4 (accurately ripped, confidence 12)")
+        runner._append_log("AccurateRip v2: not found")
+
+        track = runner.snapshot()["rip"]["tracks"][0]
+        self.assertEqual(track["accurip_confidence"], 12)
+        self.assertEqual(track["accurip_max_confidence"], 12)
+        self.assertEqual(track["accurip"], "12/12")
+
     def test_failed_scan_state_is_persisted(self) -> None:
         runner = CyanripJobRunner()
         runner.update_scan_result({}, [], returncode=22, error="scan failed")
