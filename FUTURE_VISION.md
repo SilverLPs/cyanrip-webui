@@ -1,0 +1,8 @@
+- Migration to shadcn/ui + Radix + Tailwind for User Interface and best/common practice design instead of the current unique but chaotic and more difficult custom design. Essentially a complete UI rework from scratch instead of just a remaster/rearrangement.
+- Layout with left sidebar for sessions and drives and a footbar for cyanrip logs/commands and active processes/event log (Layout inspired by hypervisor WebUIs)
+- Multiple sessions, independant from browser session (browser should be able to reload the complete WebUI at any time with no accessibility problems etc. which will of course require a switch to backend driven settings persistance instead of using browser cookies), running in the backend. Every Rip is a session. A session can be active (blocks device/drive) or finished. Left sidebar shows session list with album covers, album information and progress.
+- Devices (not device types, unique actual devices) are added and configured in a separate part of the software, including the offset (with the option to find the offset automatically). Then the added devices can be assigned to a new session/rip, no matter if or where (filepath) the device is actually available. However only one session/rip can be active/running on a device at the same time (obviously)
+- Docker/OCI-Container, Flatpak, AppImage for Linux, and also a fully featured Windows Release in a zip file, maybe also a macOS release.
+- Feature parity to EAC (at least as much as possible)
+- Audio preview for tracks on disk or ripped tracks
+- Basic but safe authentication. Multi-user would also be possible with own or shared workspaces, but thats low priority.
