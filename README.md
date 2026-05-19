@@ -1,13 +1,17 @@
 <p align="center">
-  <img src="packaging/cyanrip-webui.svg" width="112" height="112" alt="cyanrip-webui logo">
+  <img src="docs/vibecoding.png" height="200">
 </p>
+
+---
+
+<img align="left" width="80" height="80" src="packaging/cyanrip-webui.svg" alt="cyanrip-webui logo">
 
 # cyanrip-webui
 
 `cyanrip-webui` is an unofficial Linux desktop/web interface for `cyanrip`.
 It starts a local backend, opens a browser-based workflow, scans an Audio CD, lets you review metadata, and then starts the actual cyanrip rip.
 
-![cyanrip-webui screenshot placeholder](docs/screenshot-placeholder.svg)
+![cyanrip-webui screenshot placeholder](docs/screenshot.png)
 
 ## Current Status
 
@@ -58,15 +62,15 @@ The UI includes handling for common cyanrip metadata edge cases:
 
 - Multiple MusicBrainz releases for one Disc ID
 - No MusicBrainz release for the Disc ID, including the MusicBrainz submission link
-- Manual MusicBrainz release selection via `-R`
-- Multi-disc release disc-number metadata via `-c`
+- Manual MusicBrainz release selection
+- Multi-disc release disc-number metadata
 - Manual cover art through URL, local file selection, or browser upload
 
 ## Requirements
 
 - Linux desktop or Linux headless system
 - Optical drive supported by cyanrip/libcdio
-- Browser available on the same machine
+- Web browser (needs to be able to reach the Linux system which is hosting cyanrip-webui)
 - For source-tree runs: Python 3 and a cyanrip binary at `./bin/cyanrip`
 
 The AppImage is the intended user path. Source-tree execution is mainly for development.
