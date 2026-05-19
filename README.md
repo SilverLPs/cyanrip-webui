@@ -4,7 +4,7 @@
 
 ---
 
-<img align="left" width="80" height="80" src="packaging/cyanrip-webui.svg" alt="cyanrip-webui logo">
+<img align="left" width="45" height="45" src="packaging/cyanrip-webui.svg" alt="cyanrip-webui logo">
 
 # cyanrip-webui
 
