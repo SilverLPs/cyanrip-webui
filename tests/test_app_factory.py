@@ -69,6 +69,9 @@ class DirectoryBrowseTests(unittest.TestCase):
             "disable_mb": True,
             "disable_accurip": False,
             "disable_coverart_db": True,
+            "coverart_lookup_size": 500,
+            "disc_number": 2,
+            "total_discs": 3,
         }
 
         cfg = _scan_config_from_user(raw)
@@ -88,6 +91,9 @@ class DirectoryBrowseTests(unittest.TestCase):
         self.assertTrue(cfg["disable_mb"])
         self.assertFalse(cfg["disable_accurip"])
         self.assertTrue(cfg["disable_coverart_db"])
+        self.assertEqual(cfg["coverart_lookup_size"], 500)
+        self.assertEqual(cfg["disc_number"], 2)
+        self.assertEqual(cfg["total_discs"], 3)
 
     def test_scan_config_keeps_release_id_for_disambiguation(self) -> None:
         cfg = _scan_config_from_user({"release": "669ea5be-085c-406c-9cd8-4e1107cf0998"})
@@ -121,6 +127,7 @@ class DirectoryBrowseTests(unittest.TestCase):
         ):
             self.assertEqual(_resolve_binary_path("./bin/cyanrip"), bundled)
             self.assertEqual(_resolve_binary_path("bin/cyanrip"), bundled)
+            self.assertEqual(_resolve_binary_path("/tmp/.mount_cyanripABC/usr/bin/cyanrip"), bundled)
 
     def test_extract_release_candidates_from_multi_release_output(self) -> None:
         sample = """
@@ -180,6 +187,29 @@ To continue add metadata via -a or -t, or ignore via -N!
             ),
             "no_release_found",
         )
+
+    def test_scan_error_classifier_handles_cyanrip_source_edge_cases(self) -> None:
+        cases = {
+            "No mediums match DiscID!": "release_selection_invalid",
+            "Could not connect to MusicBrainz.": "musicbrainz_lookup_failed",
+            "MusicBrainz query failed: temporary failure": "musicbrainz_lookup_failed",
+            "Unable to get AccuRIP DB data: missing entry!": "accuraterip_lookup_failed",
+            "Unable to get cover art \"Front\": not found!": "cover_art_lookup_failed",
+            "Unable to init paranoia!": "device_open_failed",
+            "No track was long enough, unable to find drive offset!": "drive_offset_not_found",
+        }
+
+        for raw_output, expected in cases.items():
+            with self.subTest(raw_output=raw_output):
+                self.assertEqual(
+                    _classify_scan_error(
+                        raw_output=raw_output,
+                        release_candidates=[],
+                        release_options=[],
+                        musicbrainz_submission_url="",
+                    ),
+                    expected,
+                )
 
     def test_websocket_rpc_dispatches_allowed_api_route(self) -> None:
         app = create_app()

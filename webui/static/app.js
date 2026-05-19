@@ -91,6 +91,11 @@
       releaseCandidates: [],
       musicbrainzUrl: "",
     },
+    manualCover: {
+      dirty: false,
+      source: "",
+      sourceType: "",
+    },
 
     discInfo: null,
     discOriginal: {
@@ -130,8 +135,10 @@
       targetInputId: null,
       currentPath: "",
       selectedPath: "",
+      selectedType: "",
       homePath: "",
       projectRootPath: "",
+      mode: "directory",
     },
   };
 
@@ -150,7 +157,8 @@
   const RELEASE_ID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
   const RELEASE_OPTION_LINE_RE =
     /^\s*\d+\s*\(ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*:\s*(.+?)\s*$/i;
-  const RELEASE_HINT_RE = /(multiple\s+releases?|mehrere\s+releases?|release\s+id|musicbrainz)/i;
+  const RELEASE_HINT_RE = /(multiple\s+releases?|release\s+id|musicbrainz)/i;
+  const APPIMAGE_MOUNT_BINARY_RE = /\/\.mount[^/]*\/usr\/bin\/cyanrip$/i;
   const DISC_COVER_PLACEHOLDER =
     "data:image/svg+xml;utf8," +
     encodeURIComponent(
@@ -231,6 +239,16 @@
     el("no-release-rescan").addEventListener("click", scanDisc);
     el("no-release-disable-mb").addEventListener("click", scanWithoutMusicBrainz);
     el("no-release-copy").addEventListener("click", copyNoReleaseLink);
+    el("disc-cover-wrap").addEventListener("click", openCoverModal);
+    el("cover-manual-reset").addEventListener("click", resetManualCover);
+    el("cover-modal-close").addEventListener("click", closeCoverModal);
+    el("cover-modal-cancel").addEventListener("click", closeCoverModal);
+    el("cover-url-apply").addEventListener("click", applyCoverUrl);
+    el("cover-path-apply").addEventListener("click", applyCoverPath);
+    el("cover-path-browse").addEventListener("click", () => {
+      openDirectoryPicker("cover-path-input", { mode: "file" });
+    });
+    el("cover-upload-input").addEventListener("change", uploadCoverFromBrowser);
     el("browse-output-directory").addEventListener("click", () => {
       openDirectoryPicker("output-directory-manual");
     });
@@ -386,6 +404,12 @@
       }
     });
 
+    el("cover-overlay").addEventListener("click", (event) => {
+      if (event.target === el("cover-overlay")) {
+        closeCoverModal();
+      }
+    });
+
     ["disc-album", "disc-artist", "disc-date", "release", "disc-number", "total-discs"].forEach((id) => {
       const node = el(id);
       if (!node) {
@@ -496,12 +520,12 @@
       applySettings(DEFAULT_RUNTIME_SETTINGS());
       return;
     }
-    applySettings(parsed);
+    applySettings(normalizeStoredRuntimeSettings(parsed));
   }
 
   function persistRuntimeSettingsToStorage() {
     try {
-      window.localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(state.settings));
+      window.localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(runtimeSettingsForStorage(state.settings)));
     } catch (_) {
       // Ignore storage failures and continue without persistence.
     }
@@ -584,7 +608,7 @@
   }
 
   function mergeRuntimeSettings(backendDefaults, storedSettings) {
-    const stored = storedSettings && typeof storedSettings === "object" ? storedSettings : {};
+    const stored = normalizeStoredRuntimeSettings(storedSettings && typeof storedSettings === "object" ? storedSettings : {});
     const merged = {
       ...(backendDefaults || {}),
       ...stored,
@@ -592,7 +616,11 @@
 
     const backendBinary = String((backendDefaults && backendDefaults.binary_path) || "").trim();
     const storedBinary = String(stored.binary_path || "").trim();
-    if (backendBinary && backendBinary !== "./bin/cyanrip" && storedBinary === "./bin/cyanrip") {
+    if (
+      backendBinary &&
+      backendBinary !== "./bin/cyanrip" &&
+      (storedBinary === "./bin/cyanrip" || isAppImageMountBinaryPath(storedBinary))
+    ) {
       merged.binary_path = backendBinary;
     }
 
@@ -603,6 +631,46 @@
     }
 
     return merged;
+  }
+
+  function normalizeStoredRuntimeSettings(settings) {
+    const raw = settings && typeof settings === "object" ? settings : {};
+    const normalized = { ...raw };
+    if (typeof normalized.binary_path === "string" && isAppImageMountBinaryPath(normalized.binary_path)) {
+      normalized.binary_path = "./bin/cyanrip";
+    }
+    normalized.device_profiles = sanitizeDeviceProfiles(normalized.device_profiles);
+    normalized.misc_offset = normalizeOptionalInt(normalized.misc_offset) ?? 0;
+    return normalized;
+  }
+
+  function runtimeSettingsForStorage(settings) {
+    const raw = settings && typeof settings === "object" ? settings : {};
+    return {
+      ...raw,
+      binary_path: storageSafeBinaryPath(raw.binary_path),
+      device_profiles: sanitizeDeviceProfiles(raw.device_profiles),
+      misc_offset: normalizeOptionalInt(raw.misc_offset) ?? 0,
+    };
+  }
+
+  function storageSafeBinaryPath(value) {
+    const binary = String(value || "").trim();
+    const backendBinary = String((state.backendDefaults && state.backendDefaults.binary_path) || "").trim();
+    if (!binary) {
+      return binary;
+    }
+    if (isAppImageMountBinaryPath(binary)) {
+      return "./bin/cyanrip";
+    }
+    if (backendBinary && backendBinary !== "./bin/cyanrip" && binary === backendBinary) {
+      return "./bin/cyanrip";
+    }
+    return binary;
+  }
+
+  function isAppImageMountBinaryPath(value) {
+    return APPIMAGE_MOUNT_BINARY_RE.test(String(value || "").replace(/\\/g, "/"));
   }
 
   async function saveSettings() {
@@ -667,25 +735,36 @@
     node.textContent = [
       t("settings.binaryMissing"),
       `${t("settings.binaryPath")}: ${probe.binary_path || "-"}`,
-      `${t("settings.binaryError")}: ${probe.error || "-"}`,
+      `${t("settings.binaryError")}: ${formatProbeError(probe) || "-"}`,
     ].join("\n");
   }
 
-  async function openDirectoryPicker(targetInputId) {
+  function formatProbeError(probe) {
+    if (probe && typeof probe.error_key === "string" && probe.error_key.trim()) {
+      return t(probe.error_key.trim(), probe.error_vars && typeof probe.error_vars === "object" ? probe.error_vars : {});
+    }
+    return String((probe && probe.error) || "");
+  }
+
+  async function openDirectoryPicker(targetInputId, options = {}) {
     const input = el(targetInputId);
     if (!input) {
       return;
     }
 
     const rawPath = String(input.value || "").trim();
+    const mode = options && options.mode === "file" ? "file" : "directory";
 
     state.directoryPicker.targetInputId = targetInputId;
+    state.directoryPicker.mode = mode;
     state.directoryPicker.currentPath = rawPath || state.settings.working_directory || "./output";
     state.directoryPicker.selectedPath = state.directoryPicker.currentPath;
+    state.directoryPicker.selectedType = mode === "file" ? "" : "directory";
 
     const overlay = el("directory-picker-overlay");
     overlay.classList.remove("is-hidden");
     overlay.setAttribute("aria-hidden", "false");
+    updateDirectoryPickerModeLabels();
 
     await navigateDirectoryPicker(state.directoryPicker.currentPath);
   }
@@ -694,6 +773,9 @@
     const overlay = el("directory-picker-overlay");
     overlay.classList.add("is-hidden");
     overlay.setAttribute("aria-hidden", "true");
+    state.directoryPicker.mode = "directory";
+    state.directoryPicker.selectedType = "";
+    updateDirectoryPickerModeLabels();
   }
 
   async function directoryPickerGoUp() {
@@ -702,7 +784,8 @@
       return;
     }
     try {
-      const response = await apiGet(`/api/fs/directories?path=${encodeURIComponent(currentPath)}`);
+      const endpoint = state.directoryPicker.mode === "file" ? "/api/fs/files" : "/api/fs/directories";
+      const response = await apiGet(`${endpoint}?path=${encodeURIComponent(currentPath)}`);
       if (response.parent) {
         await navigateDirectoryPicker(response.parent);
       }
@@ -716,9 +799,11 @@
     const requested = String(path || "").trim();
 
     try {
-      const response = await apiGet(`/api/fs/directories?path=${encodeURIComponent(requested)}`);
+      const endpoint = state.directoryPicker.mode === "file" ? "/api/fs/files" : "/api/fs/directories";
+      const response = await apiGet(`${endpoint}?path=${encodeURIComponent(requested)}`);
       state.directoryPicker.currentPath = response.path || requested;
       state.directoryPicker.selectedPath = response.path || requested;
+      state.directoryPicker.selectedType = state.directoryPicker.mode === "file" ? "" : "directory";
       state.directoryPicker.homePath = response.home || state.directoryPicker.homePath;
       state.directoryPicker.projectRootPath = response.project_root || state.directoryPicker.projectRootPath;
       renderDirectoryPicker(response);
@@ -729,7 +814,9 @@
 
   function renderDirectoryPicker(payload) {
     const currentPath = String(payload.path || "");
-    const list = Array.isArray(payload.directories) ? payload.directories : [];
+    const directories = Array.isArray(payload.directories) ? payload.directories : [];
+    const files = state.directoryPicker.mode === "file" && Array.isArray(payload.files) ? payload.files : [];
+    const list = [...directories, ...files];
 
     el("directory-picker-current-path").textContent = currentPath;
     el("directory-picker-current-path").title = currentPath;
@@ -740,7 +827,7 @@
     if (list.length === 0) {
       const empty = document.createElement("div");
       empty.className = "directory-picker-empty";
-      empty.textContent = t("directoryPicker.empty");
+      empty.textContent = state.directoryPicker.mode === "file" ? t("filePicker.empty") : t("directoryPicker.empty");
       container.appendChild(empty);
       return;
     }
@@ -748,12 +835,15 @@
     list.forEach((entry) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "directory-picker-entry";
+      const entryType = String(entry.type || (entry.mime ? "file" : "directory"));
+      button.className = `directory-picker-entry ${entryType === "file" ? "is-file" : "is-directory"}`;
       button.dataset.path = entry.path;
+      button.dataset.type = entryType;
 
       const name = document.createElement("span");
       name.className = "directory-picker-entry-name";
-      name.textContent = entry.name || entry.path;
+      const entryPrefix = entryType === "file" ? t("filePicker.filePrefix") : t("filePicker.directoryPrefix");
+      name.textContent = `${entryPrefix}: ${entry.name || entry.path}`;
 
       const path = document.createElement("span");
       path.className = "directory-picker-entry-path";
@@ -763,9 +853,14 @@
       button.append(name, path);
       button.addEventListener("click", () => {
         state.directoryPicker.selectedPath = entry.path;
+        state.directoryPicker.selectedType = entryType;
         updateDirectoryPickerSelection();
       });
       button.addEventListener("dblclick", async () => {
+        if (entryType === "file") {
+          applyDirectoryPickerSelection();
+          return;
+        }
         await navigateDirectoryPicker(entry.path);
       });
 
@@ -790,6 +885,10 @@
     }
 
     const chosen = String(state.directoryPicker.selectedPath || state.directoryPicker.currentPath || "").trim();
+    if (state.directoryPicker.mode === "file" && (!chosen || state.directoryPicker.selectedType !== "file")) {
+      showError(localizedError("error.coverFileSelectRequired"));
+      return;
+    }
     const target = el(targetId);
     if (target && chosen) {
       target.value = chosen;
@@ -798,6 +897,18 @@
     }
 
     closeDirectoryPicker();
+  }
+
+  function updateDirectoryPickerModeLabels() {
+    const fileMode = state.directoryPicker.mode === "file";
+    const title = el("directory-picker-title");
+    const select = el("directory-picker-select");
+    if (title) {
+      title.textContent = fileMode ? t("filePicker.title") : t("directoryPicker.title");
+    }
+    if (select) {
+      select.textContent = fileMode ? t("filePicker.select") : t("directoryPicker.select");
+    }
   }
 
   async function refreshDrives() {
@@ -935,6 +1046,7 @@
       state.nextLogIndex = null;
       state.activeLogSource = null;
       state.scanInProgress = false;
+      state.manualCover = { dirty: false, source: "", sourceType: "" };
       hideReleaseCandidates();
       updateDiscMetaDirtyIndicators();
       setMessage("action-message", t("message.backToScan"));
@@ -992,7 +1104,7 @@
         showNoReleaseFound(noReleaseUrl);
       }
       const message = String((error && error.message) || "");
-      if (message.toLowerCase().includes("abgebrochen") || message.toLowerCase().includes("cancel")) {
+      if (message.toLowerCase().includes("cancel")) {
         clearError();
         setMessage("action-message", t("message.scanStopped"));
       } else {
@@ -1078,7 +1190,7 @@
         device_profiles: sanitizeDeviceProfiles(state.settings.device_profiles),
       });
       const lines = [];
-      lines.push(result.message || t("message.ejectDone"));
+      lines.push(result.message_key ? t(result.message_key) : result.message || t("message.ejectDone"));
       if (result.output_preview) {
         lines.push(result.output_preview);
       }
@@ -1417,6 +1529,7 @@
 
   function clearDiscMeta() {
     state.discInfo = null;
+    state.manualCover = { dirty: false, source: "", sourceType: "" };
     state.discOriginal = {
       album: "",
       album_artist: "",
@@ -1699,9 +1812,16 @@
     const coverWrap = el("disc-cover-wrap");
     const cover = el("disc-cover-preview");
     const spinner = el("disc-cover-spinner");
+    const reset = el("cover-manual-reset");
     const source = resolveDiscCoverSource();
     const sourceKey = `${source.kind}:${source.url || ""}`;
     const now = Date.now();
+
+    coverWrap.classList.toggle("is-dirty", !!state.manualCover.dirty);
+    coverWrap.title = state.manualCover.dirty ? t("cover.manualActive") : t("cover.clickToEdit");
+    if (reset) {
+      reset.classList.toggle("is-hidden", !state.manualCover.dirty);
+    }
 
     if (
       source.kind !== "empty" &&
@@ -1804,6 +1924,17 @@
       return { kind: "empty" };
     }
 
+    if (state.manualCover.dirty && state.manualCover.source) {
+      const manual = String(state.manualCover.source || "").trim();
+      if (manual.startsWith("http://") || manual.startsWith("https://")) {
+        return { kind: "manual-remote", url: `/api/cover?url=${encodeURIComponent(manual)}` };
+      }
+      if (manual.startsWith("data:image/")) {
+        return { kind: "manual-inline", url: manual };
+      }
+      return { kind: "manual-local", url: `/api/cover?path=${encodeURIComponent(manual)}` };
+    }
+
     if (!el("enable-coverart-db").checked) {
       return { kind: "placeholder" };
     }
@@ -1826,6 +1957,110 @@
     const releaseId = String(disc.release_id || disc.release || el("release").value || "").trim();
     const releaseSuffix = releaseId ? `&release_id=${encodeURIComponent(releaseId)}` : "";
     return { kind: "local", url: `/api/cover?path=${encodeURIComponent(candidate)}${releaseSuffix}` };
+  }
+
+  function openCoverModal() {
+    if (el("disc-cover-wrap").disabled) {
+      return;
+    }
+    el("cover-url-input").value = state.manualCover.sourceType === "url" ? state.manualCover.source : "";
+    el("cover-path-input").value = ["path", "upload"].includes(state.manualCover.sourceType) ? state.manualCover.source : "";
+    el("cover-upload-input").value = "";
+    const overlay = el("cover-overlay");
+    overlay.classList.remove("is-hidden");
+    overlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeCoverModal() {
+    const overlay = el("cover-overlay");
+    overlay.classList.add("is-hidden");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
+  function applyCoverUrl() {
+    const url = String(el("cover-url-input").value || "").trim();
+    if (!/^https?:\/\/\S+/i.test(url)) {
+      showError(localizedError("error.coverUrlInvalid"));
+      return;
+    }
+    setManualCover("url", url);
+    closeCoverModal();
+  }
+
+  function applyCoverPath() {
+    const path = String(el("cover-path-input").value || "").trim();
+    if (!path) {
+      showError(localizedError("error.coverPathRequired"));
+      return;
+    }
+    setManualCover("path", path);
+    closeCoverModal();
+  }
+
+  async function uploadCoverFromBrowser(event) {
+    const file = event && event.target && event.target.files ? event.target.files[0] : null;
+    if (!file) {
+      return;
+    }
+    if (!String(file.type || "").startsWith("image/")) {
+      showError(localizedError("error.coverUnsupportedImage"));
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const payload = await apiPost("/api/cover/upload", {
+        filename: file.name || "cover",
+        data_url: dataUrl,
+      });
+      const path = String(payload.path || "").trim();
+      if (!path) {
+        throw localizedError("error.coverUploadFailed");
+      }
+      setManualCover("upload", path);
+      closeCoverModal();
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(localizedError("error.coverUploadFailed"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setManualCover(sourceType, source) {
+    state.manualCover = {
+      dirty: true,
+      source: String(source || "").trim(),
+      sourceType: String(sourceType || "path"),
+    };
+    state.coverPreviewKey = "";
+    renderDiscSummary();
+    debouncePreview();
+    saveUiPreferencesDebounced();
+  }
+
+  function resetManualCover() {
+    state.manualCover = {
+      dirty: false,
+      source: "",
+      sourceType: "",
+    };
+    state.coverPreviewKey = "";
+    renderDiscSummary();
+    debouncePreview();
+    saveUiPreferencesDebounced();
+  }
+
+  function collectManualCoverArts() {
+    if (!state.manualCover.dirty || !state.manualCover.source) {
+      return [];
+    }
+    return [{ destination: "Front", source: state.manualCover.source }];
   }
 
   function resolveCoverSourceCandidate(raw, disc) {
@@ -2619,7 +2854,6 @@
     el("release").value = defaults.release || "";
     el("disc-number").value = valueOrEmpty(defaults.disc_number);
     el("total-discs").value = valueOrEmpty(defaults.total_discs);
-    el("cover-arts").value = "";
     el("coverart-lookup-size").value = String(defaults.coverart_lookup_size ?? -1);
 
     el("enable-mb").checked = !defaults.disable_mb;
@@ -2645,6 +2879,7 @@
       disc_number: normalizeOptionalInt(defaults.disc_number),
       total_discs: normalizeOptionalInt(defaults.total_discs),
     };
+    state.manualCover = { dirty: false, source: "", sourceType: "" };
     updateDiscMetaDirtyIndicators();
   }
 
@@ -2697,7 +2932,7 @@
       release: el("release").value.trim(),
       disc_number: intOrNull(el("disc-number").value),
       total_discs: intOrNull(el("total-discs").value),
-      cover_arts: parseCoverArts(el("cover-arts").value),
+      cover_arts: collectManualCoverArts(),
       disable_mb: !el("enable-mb").checked,
       disable_accurip: !el("enable-accurip").checked,
       disable_coverart_db: !el("enable-coverart-db").checked,
@@ -3215,7 +3450,7 @@
       pre_scan: ["disc-panel", "ripping-panel"],
       scan_running: ["disc-panel", "ripping-panel"],
       scan_failed: ["disc-panel", "ripping-panel"],
-      post_scan: ["disc-panel", "output-panel"],
+      post_scan: ["disc-panel", "output-panel", "metadata-panel"],
       rip_running: ["output-panel", "metadata-panel"],
       post_rip: ["disc-panel", "metadata-panel"],
     };
@@ -3533,9 +3768,16 @@
     setIfDefined("cue-scheme", parsed.cue_scheme);
     setIfDefined("output-directory-manual", parsed.output_directory_manual);
     setIfDefined("device-path", parsed.device_path);
-    setIfDefined("cover-arts", parsed.cover_arts_text);
     setIfDefined("coverart-lookup-size", parsed.coverart_lookup_size);
     setIfDefined("sanitation", parsed.sanitation);
+
+    if (parsed.manual_cover && typeof parsed.manual_cover === "object") {
+      const sourceType = String(parsed.manual_cover.sourceType || "").trim();
+      const source = String(parsed.manual_cover.source || "").trim();
+      if (source && ["url", "path"].includes(sourceType)) {
+        state.manualCover = { dirty: true, source, sourceType };
+      }
+    }
 
     setCheckedIfDefined("overread-leadinout", parsed.overread_leadinout);
     setCheckedIfDefined("decode-hdcd", parsed.decode_hdcd);
@@ -3602,13 +3844,7 @@
     }
 
     const payload = {
-      settings: {
-        binary_path: state.settings.binary_path,
-        working_directory: state.settings.working_directory,
-        language: state.settings.language,
-        device_profiles: sanitizeDeviceProfiles(state.settings.device_profiles),
-        misc_offset: normalizeOptionalInt(state.settings.misc_offset) ?? 0,
-      },
+      settings: runtimeSettingsForStorage(state.settings),
       modes: {
         offset: state.modes.offset,
         device: state.modes.device,
@@ -3634,8 +3870,13 @@
       cue_scheme: el("cue-scheme").value,
       output_directory_manual: el("output-directory-manual").value,
       device_path: el("device-path").value,
-      cover_arts_text: el("cover-arts").value,
       coverart_lookup_size: el("coverart-lookup-size").value,
+      manual_cover: state.manualCover.dirty && state.manualCover.sourceType !== "upload"
+        ? {
+            source: state.manualCover.source,
+            sourceType: state.manualCover.sourceType,
+          }
+        : null,
       enable_mb: el("enable-mb").checked,
       enable_accurip: el("enable-accurip").checked,
       enable_coverart_db: el("enable-coverart-db").checked,
@@ -3860,7 +4101,6 @@
       "enable-embedding": "hint.enableEmbedding",
       "enable-replaygain": "hint.enableReplayGain",
       "eject-on-success": "hint.ejectOnSuccess",
-      "cover-arts": "hint.coverArt",
       "coverart-lookup-size": "hint.coverArtSize",
       "output-directory-manual": "hint.baseDirectory",
     };
@@ -3992,6 +4232,16 @@
       node.title = t(key);
     });
 
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+      const key = node.getAttribute("data-i18n-aria-label");
+      node.setAttribute("aria-label", t(key));
+    });
+
+    document.querySelectorAll("[data-i18n-alt]").forEach((node) => {
+      const key = node.getAttribute("data-i18n-alt");
+      node.alt = t(key);
+    });
+
     const langSelect = el("settings-language");
     if (langSelect) {
       Array.from(langSelect.options).forEach((option) => {
@@ -4004,6 +4254,7 @@
     renderSchemeActiveSummary();
     renderActiveSchemeComposer();
     renderScanIssue();
+    updateDirectoryPickerModeLabels();
     const errorNode = el("error-box");
     if (errorNode && errorNode.dataset.errorKey) {
       setMessage("error-box", t(errorNode.dataset.errorKey, parseDatasetJson(errorNode.dataset.errorVars)));
@@ -4082,25 +4333,6 @@
       });
     });
     return rules;
-  }
-
-  function parseCoverArts(rawText) {
-    const rows = [];
-    eachNonEmptyLine(rawText, (line, lineNumber) => {
-      const split = line.indexOf("=");
-      if (split < 0) {
-        rows.push({ source: line.trim() });
-        return;
-      }
-
-      const destination = line.slice(0, split).trim();
-      const source = line.slice(split + 1).trim();
-      if (!source) {
-        throw new Error(t("error.coverArtIncomplete", { line: lineNumber }));
-      }
-      rows.push({ destination, source });
-    });
-    return rows;
   }
 
   function eachNonEmptyLine(rawText, callback) {
@@ -4285,7 +4517,7 @@
 
   function inferErrorTranslation(error) {
     const message = error instanceof Error ? error.message : String(error || "");
-    const scanExit = message.match(/^CD-Scan fehlgeschlagen \(Exit-Code (\d+)\)\.?$/i);
+    const scanExit = message.match(/^CD scan failed \(exit code (\d+)\)\.?$/i);
     if (scanExit) {
       return { key: "error.scanFailedExitCode", vars: { code: scanExit[1] } };
     }

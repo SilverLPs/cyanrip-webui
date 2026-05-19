@@ -35,7 +35,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "decode_hdcd": False,
     "force_deemphasis": False,
     "disable_deemphasis": False,
-    "disable_replaygain": False,
+    "disable_replaygain": True,
     "outputs": ["flac"],
     "bitrate": 256,
     "directory_scheme": "{album}{if #releasecomment# > #0# (|releasecomment|)} [{format}]",
@@ -81,7 +81,7 @@ class CommandBuilder:
     def build(binary_path: str, config: dict[str, Any] | None) -> BuildResult:
         binary = (binary_path or "").strip()
         if not binary:
-            raise CommandBuilderError("Pfad zur cyanrip-Binary fehlt.")
+            raise CommandBuilderError("Path to cyanrip binary is missing.")
 
         data: dict[str, Any] = dict(DEFAULT_CONFIG)
         if config:
@@ -148,7 +148,7 @@ class CommandBuilder:
         if sanitation:
             if sanitation not in SANITATION_MODES:
                 raise CommandBuilderError(
-                    f"Ungueltige Sanitation-Methode: {sanitation}. Erlaubt: {', '.join(SANITATION_MODES)}"
+                    f"Invalid sanitation mode: {sanitation}. Allowed: {', '.join(SANITATION_MODES)}"
                 )
             cmd.extend(["-T", sanitation])
 
@@ -177,7 +177,7 @@ class CommandBuilder:
         if coverart_size is not None:
             if coverart_size not in COVERART_LOOKUP_SIZES:
                 raise CommandBuilderError(
-                    f"Ungueltige Coverart-Groesse: {coverart_size}. Erlaubt: {', '.join(str(v) for v in COVERART_LOOKUP_SIZES)}"
+                    f"Invalid cover art size: {coverart_size}. Allowed: {', '.join(str(v) for v in COVERART_LOOKUP_SIZES)}"
                 )
             cmd.extend(["-m", str(coverart_size)])
 
@@ -209,7 +209,7 @@ class CommandBuilder:
         if not parsed:
             if allow_empty:
                 return None
-            raise CommandBuilderError(f"{field} darf nicht leer sein.")
+            raise CommandBuilderError(f"{field} must not be empty.")
         return parsed
 
     @staticmethod
@@ -223,16 +223,16 @@ class CommandBuilder:
         if value is None or value == "":
             if allow_empty:
                 return None
-            raise CommandBuilderError(f"{field} fehlt.")
+            raise CommandBuilderError(f"{field} is missing.")
         try:
             parsed = int(str(value).strip())
         except (TypeError, ValueError) as exc:
-            raise CommandBuilderError(f"{field} muss eine Ganzzahl sein.") from exc
+            raise CommandBuilderError(f"{field} must be an integer.") from exc
 
         if minimum is not None and parsed < minimum:
-            raise CommandBuilderError(f"{field} muss >= {minimum} sein.")
+            raise CommandBuilderError(f"{field} must be >= {minimum}.")
         if maximum is not None and parsed > maximum:
-            raise CommandBuilderError(f"{field} muss <= {maximum} sein.")
+            raise CommandBuilderError(f"{field} must be <= {maximum}.")
 
         return parsed
 
@@ -247,16 +247,16 @@ class CommandBuilder:
         if value is None or value == "":
             if allow_empty:
                 return None
-            raise CommandBuilderError(f"{field} fehlt.")
+            raise CommandBuilderError(f"{field} is missing.")
         try:
             parsed = float(str(value).strip())
         except (TypeError, ValueError) as exc:
-            raise CommandBuilderError(f"{field} muss numerisch sein.") from exc
+            raise CommandBuilderError(f"{field} must be numeric.") from exc
 
         if minimum is not None and parsed < minimum:
-            raise CommandBuilderError(f"{field} muss >= {minimum} sein.")
+            raise CommandBuilderError(f"{field} must be >= {minimum}.")
         if maximum is not None and parsed > maximum:
-            raise CommandBuilderError(f"{field} muss <= {maximum} sein.")
+            raise CommandBuilderError(f"{field} must be <= {maximum}.")
 
         return parsed
 
@@ -270,7 +270,7 @@ class CommandBuilder:
         elif isinstance(value, Iterable):
             raw = [str(part).strip() for part in value]
         else:
-            raise CommandBuilderError("Output-Formate muessen eine Liste oder CSV-String sein.")
+            raise CommandBuilderError("Output formats must be a list or CSV string.")
 
         outputs = [part for part in raw if part]
         if not outputs:
@@ -280,10 +280,10 @@ class CommandBuilder:
         for output in outputs:
             if output not in SUPPORTED_OUTPUTS:
                 raise CommandBuilderError(
-                    f"Ungueltiges Output-Format: {output}. Erlaubt: {', '.join(SUPPORTED_OUTPUTS)}"
+                    f"Invalid output format: {output}. Allowed: {', '.join(SUPPORTED_OUTPUTS)}"
                 )
             if output in seen:
-                raise CommandBuilderError(f"Output-Format doppelt gesetzt: {output}")
+                raise CommandBuilderError(f"Output format is duplicated: {output}")
             seen.add(output)
 
         return outputs
@@ -298,17 +298,17 @@ class CommandBuilder:
         elif isinstance(value, Iterable):
             raw = [str(part).strip() for part in value]
         else:
-            raise CommandBuilderError("Trackliste muss eine Liste oder CSV-String sein.")
+            raise CommandBuilderError("Track list must be a list or CSV string.")
 
         tracks: list[int] = []
         seen: set[int] = set()
         for part in raw:
             if not part:
                 continue
-            idx = CommandBuilder._parse_int(part, "Tracknummer", minimum=1, maximum=197)
+            idx = CommandBuilder._parse_int(part, "Track number", minimum=1, maximum=197)
             assert idx is not None
             if idx in seen:
-                raise CommandBuilderError(f"Tracknummer doppelt gesetzt: {idx}")
+                raise CommandBuilderError(f"Track number is duplicated: {idx}")
             seen.add(idx)
             tracks.append(idx)
 
@@ -319,19 +319,19 @@ class CommandBuilder:
         if value in (None, ""):
             return []
         if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-            raise CommandBuilderError("Pregap-Regeln muessen eine Liste sein.")
+            raise CommandBuilderError("Pregap rules must be a list.")
 
         rules: list[str] = []
         for idx, item in enumerate(value, start=1):
             if not isinstance(item, dict):
-                raise CommandBuilderError(f"Pregap-Regel #{idx} hat ein ungueltiges Format.")
-            track = CommandBuilder._parse_int(item.get("track"), f"Pregap-Regel #{idx} Track", minimum=1, maximum=197)
-            action = CommandBuilder._parse_string(item.get("action"), f"Pregap-Regel #{idx} Action")
+                raise CommandBuilderError(f"Pregap rule #{idx} has an invalid format.")
+            track = CommandBuilder._parse_int(item.get("track"), f"Pregap rule #{idx} track", minimum=1, maximum=197)
+            action = CommandBuilder._parse_string(item.get("action"), f"Pregap rule #{idx} action")
             assert track is not None and action is not None
 
             if action not in PREGAP_ACTIONS:
                 raise CommandBuilderError(
-                    f"Ungueltige Pregap-Action in Regel #{idx}: {action}. Erlaubt: {', '.join(PREGAP_ACTIONS)}"
+                    f"Invalid pregap action in rule #{idx}: {action}. Allowed: {', '.join(PREGAP_ACTIONS)}"
                 )
 
             rules.append(f"{track}={action}")
@@ -343,15 +343,15 @@ class CommandBuilder:
         if value in (None, ""):
             return []
         if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-            raise CommandBuilderError("Track-Metadaten muessen eine Liste sein.")
+            raise CommandBuilderError("Track metadata must be a list.")
 
         args: list[str] = []
         for idx, item in enumerate(value, start=1):
             if not isinstance(item, dict):
-                raise CommandBuilderError(f"Track-Metadaten #{idx} haben ein ungueltiges Format.")
+                raise CommandBuilderError(f"Track metadata #{idx} has an invalid format.")
 
-            track = CommandBuilder._parse_int(item.get("track"), f"Track-Metadaten #{idx} Track", minimum=1, maximum=197)
-            payload = CommandBuilder._parse_string(item.get("metadata"), f"Track-Metadaten #{idx} Daten")
+            track = CommandBuilder._parse_int(item.get("track"), f"Track metadata #{idx} track", minimum=1, maximum=197)
+            payload = CommandBuilder._parse_string(item.get("metadata"), f"Track metadata #{idx} data")
             assert track is not None and payload is not None
 
             args.append(f"{track}={payload}")
@@ -366,9 +366,9 @@ class CommandBuilder:
         if disc is None and total is None:
             return None
         if disc is None:
-            raise CommandBuilderError("Disc number muss gesetzt sein, wenn Total discs gesetzt ist.")
+            raise CommandBuilderError("Disc number must be set when total discs is set.")
         if total is not None and disc > total:
-            raise CommandBuilderError("Disc number darf nicht groesser als Total discs sein.")
+            raise CommandBuilderError("Disc number must not be greater than total discs.")
 
         if total is None:
             return str(disc)
@@ -379,16 +379,16 @@ class CommandBuilder:
         if value in (None, ""):
             return []
         if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-            raise CommandBuilderError("Cover-Art-Eintraege muessen eine Liste sein.")
+            raise CommandBuilderError("Cover art entries must be a list.")
 
         args: list[str] = []
         for idx, item in enumerate(value, start=1):
             if not isinstance(item, dict):
-                raise CommandBuilderError(f"Cover-Art-Eintrag #{idx} hat ein ungueltiges Format.")
+                raise CommandBuilderError(f"Cover art entry #{idx} has an invalid format.")
 
-            source = CommandBuilder._parse_string(item.get("source"), f"Cover-Art #{idx} Source")
+            source = CommandBuilder._parse_string(item.get("source"), f"Cover art #{idx} source")
             destination = CommandBuilder._parse_string(
-                item.get("destination"), f"Cover-Art #{idx} Destination", allow_empty=True
+                item.get("destination"), f"Cover art #{idx} destination", allow_empty=True
             )
             assert source is not None
             args.append(f"{destination}={source}" if destination else source)

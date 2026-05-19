@@ -1,148 +1,100 @@
+<p align="center">
+  <img src="packaging/cyanrip-webui.svg" width="112" height="112" alt="cyanrip-webui logo">
+</p>
+
 # cyanrip-webui
 
-`cyanrip-webui` is a Linux-first Web UI for `cyanrip`.
-It does not modify cyanrip itself; it only controls the cyanrip CLI process and visualizes scan/rip status.
+`cyanrip-webui` is an unofficial Linux desktop/web interface for `cyanrip`.
+It starts a local backend, opens a browser-based workflow, scans an Audio CD, lets you review metadata, and then starts the actual cyanrip rip.
 
-## Goals
+![cyanrip-webui screenshot placeholder](docs/screenshot-placeholder.svg)
 
-- No changes to cyanrip source code (`cyanrip-src/...` is read-only reference material)
-- Loose coupling: Web UI talks to cyanrip only through CLI args and process output
-- Backend remains stateless for user preferences (settings live in browser storage)
-- Full cyanrip CLI flag coverage
-- Beginner-friendly hints with expert CLI notes
-- Disc scan before ripping, including track table and metadata
-- Track-level live progress and final status/AccurateRip info
-- Phase-based workflow (pre-scan -> review/setup -> post-rip) with disc change detection before rip start
-- Internal session IDs for lifecycle boundaries and future multi-session extensibility (not shown in main UI)
-- Global runtime settings persisted in browser storage (binary path, working directory, language, per-drive offsets)
-- Theme auto-detection (light/dark) with manual override
-- English as default language, with locale files and browser language detection
-- WebSocket-first status/log streaming with optional HTTP polling fallback
-- WebSocket RPC for frontend/backend JSON actions; HTTP fallback is opt-in for debugging only
+## Current Status
 
-## Project Layout
+This is `v0.1-alpha`.
 
-- `app.py`: Flask entrypoint
-- `launcher.py`: optional desktop/headless launcher with tray support
-- `webui/app_factory.py`: routes and API endpoints
-- `webui/command_builder.py`: UI config -> cyanrip args
-- `webui/runner.py`: background process runner and live logs
-- `webui/scan_parser.py`: parser for scan/rip output
-- `webui/templates/index.html`: single-page UI
-- `webui/static/style.css`, `webui/static/app.js`: frontend
-- `webui/static/i18n/*.json`: language files
-- `tests/*.py`: unit tests
+The software was built as vibe coding software for private use and is published only in case it is useful to someone else. It has not been intensively tested. Use it at your own risk. There are no guarantees and no liability for damaged data, wrong metadata, failed rips, broken drives, or any other outcome.
 
-## Quick Start
+`cyanrip-webui` is not affiliated with, endorsed by, or coordinated with the cyanrip project. It is a separate wrapper around the cyanrip command line tool. Bugs in this WebUI should be reported to this project, not to cyanrip.
 
-1. Create and activate a Python venv.
+## Recommended Use
+
+Download the AppImage from the GitHub Releases page:
+
+https://github.com/silverlps/cyanrip-webui/releases
+
+Then run it:
+
+```bash
+chmod +x cyanrip-webui-v0.1-alpha-x86_64.AppImage
+./cyanrip-webui-v0.1-alpha-x86_64.AppImage
+```
+
+The application keeps running in the background. A system tray icon should appear in your desktop panel/taskbar. Use that icon to open cyanrip-webui in the browser or quit the application.
+
+By default, AppImage runs use:
+
+- Bundled `cyanrip` binary inside the AppImage
+- Output directory `output` next to the AppImage file
+- WebSocket communication for frontend/backend JSON actions
+- HTTP only for initial HTML/static assets, locale files, cover image previews, and the first settings/capability request
+
+If WebSocket transport fails, the app intentionally does not fall back to HTTP by default. For debugging you can opt in:
+
+```bash
+./cyanrip-webui-v0.1-alpha-x86_64.AppImage --enable-http-fallback
+```
+
+## Workflow
+
+1. Insert an Audio CD.
+2. Scan the disc.
+3. Review MusicBrainz metadata, AccurateRip status, cover art, disc fields, and track fields.
+4. Adjust release/disc metadata if needed.
+5. Select output format and naming.
+6. Start the rip.
+
+The UI includes handling for common cyanrip metadata edge cases:
+
+- Multiple MusicBrainz releases for one Disc ID
+- No MusicBrainz release for the Disc ID, including the MusicBrainz submission link
+- Manual MusicBrainz release selection via `-R`
+- Multi-disc release disc-number metadata via `-c`
+- Manual cover art through URL, local file selection, or browser upload
+
+## Requirements
+
+- Linux desktop or Linux headless system
+- Optical drive supported by cyanrip/libcdio
+- Browser available on the same machine
+- For source-tree runs: Python 3 and a cyanrip binary at `./bin/cyanrip`
+
+The AppImage is the intended user path. Source-tree execution is mainly for development.
+
+## Source Run
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-2. Provide a cyanrip binary, for example:
-
-```bash
 mkdir -p bin
 cp /usr/bin/cyanrip ./bin/cyanrip
 chmod +x ./bin/cyanrip
-```
-
-3. Start the web UI:
-
-```bash
-python3 app.py
-```
-
-Enable verbose Flask debug logs only when needed:
-
-```bash
-python3 app.py --debug
-```
-
-Allow HTTP fallback if WebSocket transport is unavailable:
-
-```bash
-python3 app.py --enable-http-fallback
-```
-
-Alternative launcher (tray/headless aware):
-
-```bash
 python3 launcher.py
 ```
 
-Optional browser auto-open:
+Open:
 
-```bash
-python3 launcher.py --open-browser
+```text
+http://127.0.0.1:8080
 ```
 
-The launcher supports the same fallback switch:
+## Project Links
 
-```bash
-python3 launcher.py --enable-http-fallback
-```
+- Project: https://github.com/silverlps/cyanrip-webui
+- Development notes: [DEVELOPMENT_PRACTICES.md](DEVELOPMENT_PRACTICES.md)
+- Third-party licenses: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 
-4. Open: `http://127.0.0.1:8080`
+## License
 
-## API Endpoints
-
-- `POST /api/preview`: build command preview from UI config
-- `POST /api/start`: start rip job
-- `POST /api/scan`: scan disc via `cyanrip -I`
-- `POST /api/stop`: stop running scan or rip job
-- `POST /api/eject`: open CD drive tray via `eject`
-- `GET /api/status`: job status snapshot
-- `GET /api/logs?source=<auto|scan|rip>&since=<index>`: incremental logs (phase-aware by default with `source=auto`)
-- `WS /ws/status`: status + incremental logs stream
-- `WS /ws/rpc`: JSON RPC transport for API-style frontend/backend actions
-- `GET /api/cover?path=<file>`: serve scanned cover image previews from backend filesystem
-- `GET /api/settings`: load backend defaults + binary probe status (+ websocket capability)
-- `POST /api/settings`: stateless normalization/probe helper (does not persist server-side)
-- `POST /api/probe`: run `-V` against the selected binary
-- `GET /api/drives`: list detected optical drives (profile hints can be passed from frontend state)
-- `POST /api/drives/offset`: stateless profile merge helper (no backend persistence)
-- `POST /api/session/reset`: return to pre-scan phase and clear cached scan metadata
-- `GET /api/fs/directories?path=<dir>`: server-side directory browser for settings/output pickers
-
-## Notes
-
-- `working_directory` defaults to `./output` during source-tree runs.
-- In AppImage builds, the default output directory is `output` next to the AppImage file.
-- AppImage builds bundle `bin/cyanrip` and use that binary by default; users can still point the setting at another cyanrip executable.
-- The web UI uses user-facing workflow phases; backend still keeps technical session phases and IDs for state tracking.
-- Directory selection in the UI is server-side (backend filesystem, not browser client filesystem).
-- Multi-entry args (`-p`, `-C`) are mapped via line-based UI inputs; track metadata (`-t`) is built from edited rows in the track table.
-- Multi-release DiscID scan errors are surfaced in UI with release ID selection, not only in logs.
-- Missing MusicBrainz release info is surfaced with the MusicBrainz DiscID submission URL and an option to rescan without MusicBrainz.
-- HTTP remains necessary for the initial HTML/static assets, locale files, cover image previews, and the first settings/capability request. Normal JSON actions use WebSocket RPC after that. HTTP fallback for these actions is disabled by default and can be enabled with `--enable-http-fallback`.
-- Current target platform is Linux.
-
-## Packaging (AppImage)
-
-Build script:
-
-```bash
-./scripts/build_appimage.sh
-```
-
-Output:
-
-- `dist/cyanrip-webui-x86_64.AppImage`
-
-Runtime notes:
-
-- AppImage entrypoint is `launcher.py` (backend + optional tray integration).
-- The launcher prefers Qt's native system tray integration. Legacy XEmbed/pystray can be enabled with `CYANRIP_WEBUI_ALLOW_XEMBED_TRAY=1` for debugging, but it is not the default because it has limited menu support.
-- Use `--headless` to force non-GUI/background behavior on desktop systems.
-- Browser auto-open is disabled by default; use `--open-browser` if desired.
-
-## Tests
-
-```bash
-python3 -m unittest discover -s tests
-```
+`cyanrip-webui` is licensed under the MIT License. Bundled or referenced third-party components keep their own licenses. The bundled cyanrip binary is covered by cyanrip's license, not by this project's MIT license.

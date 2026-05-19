@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import base64
+import binascii
 import io
 import json
 import mimetypes
@@ -24,10 +26,10 @@ try:
     from flask_sock import Sock
 except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
     Sock = None
-    SOCK_IMPORT_ERROR = f"flask_sock konnte nicht importiert werden: {exc}"
+    SOCK_IMPORT_ERROR = f"flask_sock could not be imported: {exc}"
 except Exception as exc:  # pragma: no cover - defensive guard for packaged environments
     Sock = None
-    SOCK_IMPORT_ERROR = f"flask_sock Importfehler: {exc}"
+    SOCK_IMPORT_ERROR = f"flask_sock import failed: {exc}"
 else:
     SOCK_IMPORT_ERROR = ""
 
@@ -43,6 +45,7 @@ from .command_builder import (
 from .device_probe import list_optical_drives
 from .runner import CyanripJobRunner
 from .scan_parser import parse_scan_output
+from .version import APP_TAGLINE, APP_VERSION, PROJECT_URL
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 APP_IS_FROZEN = bool(
@@ -117,6 +120,7 @@ DEFAULT_UI_SETTINGS: dict[str, Any] = {
 COVER_CACHE_TTL_SECONDS = 900
 COVER_CACHE_MAX_ITEMS = 12
 COVER_FETCH_MAX_BYTES = 8 * 1024 * 1024
+COVER_UPLOAD_MAX_BYTES = 8 * 1024 * 1024
 _RIP_PROGRESS_LINE_RE = re.compile(
     r"^Ripping(?:\s+and\s+encoding)?\s+track\s+\d+,\s+progress\s+-\s+[0-9]+(?:\.[0-9]+)?%",
     re.IGNORECASE,
@@ -127,12 +131,12 @@ _MB_RELEASE_OPTION_RE = re.compile(
     re.IGNORECASE,
 )
 _MULTI_RELEASE_HINT_RE = re.compile(
-    r"(multiple\s+releases?|mehrere\s+releases?|release\s+id|musicbrainz)",
+    r"(multiple\s+releases?|release\s+id|musicbrainz)",
     re.IGNORECASE,
 )
 _NO_RELEASE_HINT_RE = re.compile(
     r"(unable\s+to\s+find\s+release\s+info|no\s+releases?\s+found|discid\s+has\s+no\s+associated\s+releases|"
-    r"metadaten?.*nicht|release\s+info.*nicht)",
+    r"matching\s+stub|submit(?:ting)?\s+the\s+disc\s+info)",
     re.IGNORECASE,
 )
 _MB_CD_TOC_ATTACH_RE = re.compile(r"https://musicbrainz\.org/cdtoc/attach\?[^\s<>\"]+", re.IGNORECASE)
@@ -141,6 +145,7 @@ _WS_RPC_ALLOWED: set[tuple[str, str]] = {
     ("POST", "/api/settings"),
     ("POST", "/api/probe"),
     ("GET", "/api/fs/directories"),
+    ("GET", "/api/fs/files"),
     ("GET", "/api/drives"),
     ("POST", "/api/drives/offset"),
     ("POST", "/api/session/reset"),
@@ -151,6 +156,7 @@ _WS_RPC_ALLOWED: set[tuple[str, str]] = {
     ("POST", "/api/eject"),
     ("GET", "/api/status"),
     ("GET", "/api/logs"),
+    ("POST", "/api/cover/upload"),
 }
 
 
@@ -257,6 +263,9 @@ def create_app() -> Flask:
             coverart_lookup_sizes=COVERART_LOOKUP_SIZES,
             default_working_directory=DEFAULT_UI_SETTINGS["working_directory"],
             initial_settings=DEFAULT_UI_SETTINGS,
+            app_version=APP_VERSION,
+            project_url=PROJECT_URL,
+            app_tagline=APP_TAGLINE,
         )
 
     @app.get("/api/settings")
@@ -268,6 +277,11 @@ def create_app() -> Flask:
                 "websocket_available": bool(sock is not None),
                 "websocket_error": SOCK_IMPORT_ERROR,
                 "http_fallback_enabled": HTTP_FALLBACK_ENABLED,
+                "app": {
+                    "version": APP_VERSION,
+                    "project_url": PROJECT_URL,
+                    "tagline": APP_TAGLINE,
+                },
             }
         )
 
@@ -305,11 +319,26 @@ def create_app() -> Flask:
         try:
             data = _list_directories(raw_path)
         except PermissionError as exc:
-            return jsonify({"error": str(exc)}), 403
+            return jsonify({"error": str(exc), "error_key": "error.directoryPermission", "error_vars": {"path": raw_path}}), 403
         except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.directoryInvalid", "error_vars": {"path": raw_path}}), 400
         except OSError as exc:
-            return jsonify({"error": f"Verzeichnis konnte nicht gelesen werden: {exc}"}), 500
+            return jsonify({"error": f"Directory could not be read: {exc}", "error_key": "error.directoryReadFailed"}), 500
+
+        return jsonify(data)
+
+    @app.get("/api/fs/files")
+    def list_files() -> Any:
+        raw_path = request.args.get("path", default="", type=str)
+
+        try:
+            data = _list_cover_files(raw_path)
+        except PermissionError as exc:
+            return jsonify({"error": str(exc), "error_key": "error.directoryPermission", "error_vars": {"path": raw_path}}), 403
+        except ValueError as exc:
+            return jsonify({"error": str(exc), "error_key": "error.directoryInvalid", "error_vars": {"path": raw_path}}), 400
+        except OSError as exc:
+            return jsonify({"error": f"Directory could not be read: {exc}", "error_key": "error.directoryReadFailed"}), 500
 
         return jsonify(data)
 
@@ -347,35 +376,50 @@ def create_app() -> Flask:
                     lock=state_lock,
                 )
             except ValueError as exc:
-                return jsonify({"error": str(exc)}), 400
+                return jsonify({"error": str(exc), "error_key": "error.coverUrlInvalid"}), 400
             except OSError as exc:
-                return jsonify({"error": str(exc)}), 502
+                return jsonify({"error": str(exc), "error_key": "error.coverDownloadFailed"}), 502
 
             return send_file(io.BytesIO(data), mimetype=mime, conditional=False, max_age=120)
 
         if not raw_path:
-            return jsonify({"error": "Pfad oder URL fehlt."}), 400
+            return jsonify({"error": "Path or URL is missing.", "error_key": "error.coverSourceMissing"}), 400
 
         try:
             resolved = Path(raw_path).expanduser().resolve()
         except OSError:
-            return jsonify({"error": "Ungueltiger Cover-Pfad."}), 400
+            return jsonify({"error": "Invalid cover path.", "error_key": "error.coverPathInvalid"}), 400
 
         if not resolved.exists() or not resolved.is_file():
-            return jsonify({"error": "Cover-Datei nicht gefunden."}), 404
+            return jsonify({"error": "Cover file was not found.", "error_key": "error.coverFileNotFound"}), 404
 
         mime, _ = mimetypes.guess_type(str(resolved))
         if not mime or not mime.startswith("image/"):
-            return jsonify({"error": "Datei ist kein unterstuetztes Bild."}), 415
+            return jsonify({"error": "File is not a supported image.", "error_key": "error.coverUnsupportedImage"}), 415
 
         return send_file(resolved, mimetype=mime, conditional=True)
+
+    @app.post("/api/cover/upload")
+    def upload_cover() -> Any:
+        payload = _json_payload()
+        data_url = str(payload.get("data_url") or "").strip()
+        filename = str(payload.get("filename") or "cover").strip() or "cover"
+
+        try:
+            saved = _store_uploaded_cover(data_url=data_url, filename=filename)
+        except ValueError as exc:
+            return jsonify({"error": str(exc), "error_key": "error.coverUploadInvalid"}), 400
+        except OSError as exc:
+            return jsonify({"error": f"Cover upload could not be stored: {exc}", "error_key": "error.coverUploadFailed"}), 500
+
+        return jsonify(saved)
 
     @app.post("/api/drives/offset")
     def update_drive_offset() -> Any:
         payload = _json_payload()
         device_id = str(payload.get("device_id") or "").strip()
         if not device_id:
-            return jsonify({"error": "device_id fehlt."}), 400
+            return jsonify({"error": "device_id is missing.", "error_key": "error.deviceIdMissing"}), 400
 
         profile_map = _coerce_device_profiles(payload.get("device_profiles"))
         misc_offset = _parse_optional_int(payload.get("misc_offset"), fallback=0)
@@ -389,7 +433,7 @@ def create_app() -> Flask:
             try:
                 offset = int(str(offset_raw).strip())
             except (TypeError, ValueError):
-                return jsonify({"error": "Offset muss eine Ganzzahl sein."}), 400
+                return jsonify({"error": "Offset must be an integer.", "error_key": "error.offsetInvalid"}), 400
             profile_map[device_id] = {"offset": offset}
 
         settings = _effective_settings(
@@ -406,7 +450,7 @@ def create_app() -> Flask:
         with state_lock:
             scan_process = scan_runtime.get("process")
         if runner.snapshot().get("is_running") or (scan_process is not None and scan_process.poll() is None):
-            return jsonify({"error": "Ein Scan- oder Rip-Job laeuft. Bitte zuerst stoppen."}), 409
+            return jsonify({"error": "A scan or rip job is still running. Stop it first.", "error_key": "error.jobRunning"}), 409
 
         runner.reset_runtime_state()
         runner.update_scan_result({}, [], returncode=0)
@@ -437,24 +481,24 @@ def create_app() -> Flask:
                 preview_config = config
             result = CommandBuilder.build(binary_path=binary_path, config=preview_config)
         except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except CommandBuilderError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
 
         return jsonify({"command": result.argv, "shell_command": result.shell})
 
     @app.post("/api/scan")
     def scan() -> Any:
         if runner.snapshot()["is_running"]:
-            return jsonify({"error": "Ein Rip-Job laeuft bereits. Bitte zuerst stoppen oder warten."}), 409
+            return jsonify({"error": "A rip job is already running. Stop it or wait first.", "error_key": "error.ripAlreadyRunning"}), 409
         try:
             runner.reset_runtime_state()
         except RuntimeError:
-            return jsonify({"error": "Ein Rip-Job laeuft bereits. Bitte zuerst stoppen oder warten."}), 409
+            return jsonify({"error": "A rip job is already running. Stop it or wait first.", "error_key": "error.ripAlreadyRunning"}), 409
         with state_lock:
             active_scan = scan_runtime.get("process")
             if active_scan is not None and active_scan.poll() is None:
-                return jsonify({"error": "Ein CD-Scan laeuft bereits."}), 409
+                return jsonify({"error": "A CD scan is already running.", "error_key": "error.scanAlreadyRunning"}), 409
             if active_scan is not None and active_scan.poll() is not None:
                 scan_runtime["process"] = None
             scan_runtime["cancel_requested"] = False
@@ -481,17 +525,17 @@ def create_app() -> Flask:
             with state_lock:
                 if ui_state.get("phase") == "scanning":
                     ui_state["phase"] = "idle"
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except CommandBuilderError as exc:
             with state_lock:
                 if ui_state.get("phase") == "scanning":
                     ui_state["phase"] = "idle"
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except OSError as exc:
             with state_lock:
                 if ui_state.get("phase") == "scanning":
                     ui_state["phase"] = "idle"
-            return jsonify({"error": f"CD-Scan konnte nicht gestartet werden: {exc}"}), 500
+            return jsonify({"error": f"CD scan could not be started: {exc}", "error_key": "error.scanStartFailed"}), 500
 
         parsed = scan_result["parsed"]
         returncode = scan_result["returncode"]
@@ -546,18 +590,27 @@ def create_app() -> Flask:
             payload_out["error_kind"] = "no_release_found"
             payload_out["error_key"] = "error.noReleaseFound"
             payload_out["musicbrainz_submission_url"] = scan_result.get("musicbrainz_submission_url") or ""
+        else:
+            error_kind = scan_result.get("error_kind")
+            error_key = _scan_error_key(error_kind)
+            if error_kind and error_key:
+                payload_out["error_kind"] = error_kind
+                payload_out["error_key"] = error_key
         payload_out["output_snippet"] = payload_out.get("output_preview") or ""
 
         if scan_was_cancelled:
-            payload_out["error"] = "CD-Scan wurde abgebrochen."
+            payload_out["error"] = "CD scan was cancelled."
+            payload_out["error_key"] = "error.scanCancelled"
+            payload_out["error_vars"] = {}
             return jsonify(payload_out), 409
 
         if returncode != 0:
-            payload_out["error"] = scan_result.get("error") or f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
+            payload_out["error"] = scan_result.get("error") or f"CD scan failed (exit code {returncode})."
             if payload_out.get("error_kind") in {"release_selection_required", "no_release_found"}:
                 return jsonify(payload_out), 409
-            payload_out["error_key"] = "error.scanFailedExitCode"
-            payload_out["error_vars"] = {"code": returncode}
+            if not payload_out.get("error_key"):
+                payload_out["error_key"] = "error.scanFailedExitCode"
+                payload_out["error_vars"] = {"code": returncode}
             return jsonify(payload_out), 422
 
         return jsonify(payload_out), 200
@@ -572,32 +625,40 @@ def create_app() -> Flask:
         with state_lock:
             scan_process = scan_runtime.get("process")
             if scan_process is not None and scan_process.poll() is None:
-                return jsonify({"error": "Ein CD-Scan laeuft noch. Bitte auf den Abschluss warten oder stoppen."}), 409
+                return jsonify({"error": "A CD scan is still running. Wait for it to finish or stop it.", "error_key": "error.scanStillRunning"}), 409
             scan_signature = ui_state.get("scan_signature")
             current_phase = str(ui_state.get("phase") or "")
         if not scan_signature:
-            return jsonify({"error": "Bitte zuerst einen CD-Scan durchfuehren."}), 409
+            return jsonify({"error": "Scan the disc first.", "error_key": "error.scanRequired"}), 409
         if current_phase != "scanned":
-            return jsonify({"error": "Rip kann nur aus der gescannten Phase gestartet werden. Bitte erneut scannen."}), 409
+            return jsonify({"error": "Rip can only start from the scanned phase. Scan again.", "error_key": "error.scanRequired"}), 409
 
         try:
             binary_path = _resolve_binary_path(binary_path_raw)
             working_directory = _resolve_working_directory(working_directory_raw)
         except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
 
         try:
             preflight = _run_disc_scan(binary_path=binary_path, working_directory=working_directory, config=config)
         except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except CommandBuilderError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except OSError as exc:
-            return jsonify({"error": f"Vorab-Scan fehlgeschlagen: {exc}"}), 500
+            return jsonify({"error": f"Pre-rip scan failed: {exc}", "error_key": "error.preflightScanFailed"}), 500
 
         if preflight["returncode"] != 0:
-            error_message = preflight.get("error") or f"CD-Scan fehlgeschlagen (Exit-Code {preflight['returncode']})."
-            return jsonify({"error": f"Vor dem Rip konnte die Disc nicht verifiziert werden: {error_message}"}), 422
+            error_message = preflight.get("error") or f"CD scan failed (exit code {preflight['returncode']})."
+            return (
+                jsonify(
+                    {
+                        "error": f"Disc could not be verified before ripping: {error_message}",
+                        "error_key": "error.preflightDiscChangedOrFailed",
+                    }
+                ),
+                422,
+            )
 
         current_signature = _disc_signature(preflight["parsed"].get("disc") or {})
 
@@ -619,7 +680,8 @@ def create_app() -> Flask:
             return (
                 jsonify(
                     {
-                        "error": "Die eingelegte Disc hat sich seit dem letzten Scan geaendert. Bitte erneut scannen.",
+                        "error": "The inserted disc changed since the last scan. Scan again.",
+                        "error_key": "error.discChanged",
                         "expected_signature": expected_signature,
                         "current_signature": current_signature,
                         "session": _session_snapshot(ui_state, state_lock),
@@ -636,15 +698,15 @@ def create_app() -> Flask:
                 working_directory=working_directory,
             )
         except CommandBuilderError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.validationFailed"}), 400
         except RuntimeError as exc:
-            return jsonify({"error": str(exc)}), 409
+            return jsonify({"error": str(exc), "error_key": "error.ripAlreadyRunning"}), 409
         except FileNotFoundError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.binaryNotFound", "error_vars": {"path": binary_path}}), 400
         except NotADirectoryError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return jsonify({"error": str(exc), "error_key": "error.directoryInvalid", "error_vars": {"path": working_directory}}), 400
         except OSError as exc:
-            return jsonify({"error": f"Start fehlgeschlagen: {exc}"}), 500
+            return jsonify({"error": f"Start failed: {exc}", "error_key": "error.ripStartFailed"}), 500
 
         with state_lock:
             ui_state["phase"] = "ripping"
@@ -687,7 +749,7 @@ def create_app() -> Flask:
     @app.post("/api/eject")
     def eject_drive() -> Any:
         if runner.snapshot()["is_running"]:
-            return jsonify({"error": "Waehrend eines laufenden Rip-Jobs kann das Laufwerk nicht geoeffnet werden."}), 409
+            return jsonify({"error": "The drive cannot be opened while a rip job is running.", "error_key": "error.ejectDuringRip"}), 409
 
         payload = _json_payload()
         device_path = str(payload.get("device_path", "")).strip()
@@ -702,9 +764,10 @@ def create_app() -> Flask:
                     jsonify(
                         {
                             "error": (
-                                "Mehrere Laufwerke erkannt. Bitte ein konkretes Laufwerk auswaehlen, "
-                                "um inkonsistentes Auswerfen im Auto-Modus zu vermeiden."
-                            )
+                                "Multiple drives were detected. Select a specific drive first "
+                                "to avoid ambiguous eject behavior in auto mode."
+                            ),
+                            "error_key": "error.ejectAutoAmbiguous",
                         }
                     ),
                     409,
@@ -724,13 +787,13 @@ def create_app() -> Flask:
                 check=False,
             )
         except FileNotFoundError:
-            return jsonify({"error": "Das Kommando 'eject' wurde nicht gefunden."}), 400
+            return jsonify({"error": "The 'eject' command was not found.", "error_key": "error.ejectCommandMissing"}), 400
         except PermissionError:
-            return jsonify({"error": "Keine Berechtigung, um das Laufwerk auszuwerfen."}), 403
+            return jsonify({"error": "Permission denied while opening the drive.", "error_key": "error.ejectPermission"}), 403
         except subprocess.TimeoutExpired:
-            return jsonify({"error": "Auswurf hat das Timeout erreicht."}), 504
+            return jsonify({"error": "Eject timed out.", "error_key": "error.ejectTimeout"}), 504
         except OSError as exc:
-            return jsonify({"error": f"Auswurf fehlgeschlagen: {exc}"}), 500
+            return jsonify({"error": f"Eject failed: {exc}", "error_key": "error.ejectFailed"}), 500
 
         normalized_output = _normalize_output(completed.stdout or "")
         payload_out = {
@@ -740,10 +803,13 @@ def create_app() -> Flask:
         }
 
         if completed.returncode != 0:
-            payload_out["error"] = f"Auswurf fehlgeschlagen (Exit-Code {completed.returncode})."
+            payload_out["error"] = f"Eject failed (exit code {completed.returncode})."
+            payload_out["error_key"] = "error.ejectFailedExitCode"
+            payload_out["error_vars"] = {"code": completed.returncode}
             return jsonify(payload_out), 422
 
-        payload_out["message"] = "Laufwerk wurde geoeffnet."
+        payload_out["message"] = "Drive opened."
+        payload_out["message_key"] = "message.ejectDone"
         return jsonify(payload_out), 200
 
     @app.get("/api/status")
@@ -755,7 +821,7 @@ def create_app() -> Flask:
             try:
                 since = int(since_raw)
             except ValueError:
-                return jsonify({"error": "Query-Parameter 'since' muss eine Zahl sein."}), 400
+                return jsonify({"error": "Query parameter 'since' must be numeric.", "error_key": "error.invalidSinceParameter"}), 400
 
         payload = status_payload()
         source = str(payload.get("log_source") or "scan")
@@ -954,6 +1020,8 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
             "version": "",
             "returncode": None,
             "error": str(exc),
+            "error_key": "error.binaryPathMissing",
+            "error_vars": {},
             "checked_at": checked_at,
         }
 
@@ -972,7 +1040,9 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
             "binary_path": binary_path,
             "version": "",
             "returncode": None,
-            "error": f"Binary nicht gefunden: {binary_path}",
+            "error": f"Binary not found: {binary_path}",
+            "error_key": "error.binaryNotFound",
+            "error_vars": {"path": binary_path},
             "checked_at": checked_at,
         }
     except PermissionError:
@@ -981,7 +1051,9 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
             "binary_path": binary_path,
             "version": "",
             "returncode": None,
-            "error": f"Keine Ausfuehrungsrechte: {binary_path}",
+            "error": f"Binary is not executable: {binary_path}",
+            "error_key": "error.binaryPermission",
+            "error_vars": {"path": binary_path},
             "checked_at": checked_at,
         }
     except subprocess.TimeoutExpired:
@@ -990,7 +1062,9 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
             "binary_path": binary_path,
             "version": "",
             "returncode": None,
-            "error": "Probe-Command hat das Timeout erreicht.",
+            "error": "Binary probe timed out.",
+            "error_key": "error.binaryProbeTimeout",
+            "error_vars": {},
             "checked_at": checked_at,
         }
     except OSError as exc:
@@ -999,7 +1073,9 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
             "binary_path": binary_path,
             "version": "",
             "returncode": None,
-            "error": f"Probe fehlgeschlagen: {exc}",
+            "error": f"Binary probe failed: {exc}",
+            "error_key": "error.binaryProbeFailed",
+            "error_vars": {"message": str(exc)},
             "checked_at": checked_at,
         }
 
@@ -1009,7 +1085,9 @@ def _probe_binary_version(binary_path_raw: str) -> dict[str, Any]:
         "binary_path": binary_path,
         "version": "\n".join(version_output.splitlines()[:2]),
         "returncode": completed.returncode,
-        "error": "" if completed.returncode == 0 else f"Exit-Code {completed.returncode}",
+        "error": "" if completed.returncode == 0 else f"Exit code {completed.returncode}",
+        "error_key": "" if completed.returncode == 0 else "error.binaryProbeExitCode",
+        "error_vars": {} if completed.returncode == 0 else {"code": completed.returncode},
         "checked_at": checked_at,
     }
 
@@ -1133,9 +1211,9 @@ def _run_disc_scan(
 
         returncode = process.wait(timeout=8)
     except FileNotFoundError:
-        raise ValueError(f"Binary nicht gefunden: {binary_path}") from None
+        raise ValueError(f"Binary not found: {binary_path}") from None
     except PermissionError:
-        raise ValueError(f"Keine Ausfuehrungsrechte: {binary_path}") from None
+        raise ValueError(f"Binary is not executable: {binary_path}") from None
     except subprocess.TimeoutExpired:
         if process is not None:
             process.kill()
@@ -1160,7 +1238,7 @@ def _run_disc_scan(
             "parsed": {"disc": {}, "tracks": []},
             "output_lines": 0,
             "output_preview": "",
-            "error": "CD-Scan hat das Timeout erreicht.",
+            "error": "CD scan timed out.",
             "cancelled": False,
         }
     finally:
@@ -1219,7 +1297,7 @@ def _scan_config_from_user(config: dict[str, Any]) -> dict[str, Any]:
         "disable_mb": bool(user_config.get("disable_mb")),
         "disable_accurip": bool(user_config.get("disable_accurip")),
         "disable_coverart_db": bool(user_config.get("disable_coverart_db")),
-        "coverart_lookup_size": None,
+        "coverart_lookup_size": user_config.get("coverart_lookup_size"),
         "disable_coverart_embedding": False,
         "print_info_only": True,
         "show_help": False,
@@ -1234,8 +1312,8 @@ def _scan_config_from_user(config: dict[str, Any]) -> dict[str, Any]:
         "album_metadata": "",
         "track_metadata": [],
         "release": str(user_config.get("release") or "").strip(),
-        "disc_number": None,
-        "total_discs": None,
+        "disc_number": user_config.get("disc_number"),
+        "total_discs": user_config.get("total_discs"),
         "cover_arts": [],
         "max_retries": None,
         "ripping_retries": None,
@@ -1327,7 +1405,59 @@ def _classify_scan_error(
     if musicbrainz_submission_url and _NO_RELEASE_HINT_RE.search(text):
         return "no_release_found"
 
+    lowered = text.lower()
+    if (
+        "invalid release index" in lowered
+        or ("release id" in lowered and "not found in release list" in lowered)
+        or "no mediums match discid" in lowered
+    ):
+        return "release_selection_invalid"
+    if "invalid disc number" in lowered or "invalid discnumber" in lowered:
+        return "disc_number_invalid"
+    if (
+        "musicbrainz lookup failed" in lowered
+        or "could not connect to musicbrainz" in lowered
+        or "musicbrainz query failed" in lowered
+        or "error fetching/requesting/auth" in lowered
+        or "got empty medium list" in lowered
+    ):
+        return "musicbrainz_lookup_failed"
+    if "unable to get accurip db data" in lowered:
+        return "accuraterip_lookup_failed"
+    if "unable to get cover art" in lowered:
+        return "cover_art_lookup_failed"
+    if (
+        "unable to open device" in lowered
+        or "unable to init cdio context" in lowered
+        or "unable to init cddap context" in lowered
+        or "unable to init paranoia" in lowered
+        or "invalid number of tracks" in lowered
+    ):
+        return "device_open_failed"
+    if "offset is unset" in lowered:
+        return "offset_unset"
+    if "no track had accurip entry" in lowered or "cannot find offset" in lowered or "no track was long enough" in lowered:
+        return "drive_offset_not_found"
+    if "invalid folder name" in lowered:
+        return "output_path_invalid"
+
     return None
+
+
+def _scan_error_key(error_kind: Any) -> str:
+    return {
+        "release_selection_required": "error.releaseSelectionRequired",
+        "no_release_found": "error.noReleaseFound",
+        "release_selection_invalid": "error.releaseSelectionInvalid",
+        "disc_number_invalid": "error.discNumberInvalidForRelease",
+        "musicbrainz_lookup_failed": "error.musicBrainzLookupFailed",
+        "accuraterip_lookup_failed": "error.accurateRipLookupFailed",
+        "cover_art_lookup_failed": "error.coverArtLookupFailed",
+        "device_open_failed": "error.deviceOpenFailed",
+        "offset_unset": "error.offsetUnset",
+        "drive_offset_not_found": "error.driveOffsetNotFound",
+        "output_path_invalid": "error.outputPathInvalid",
+    }.get(str(error_kind or ""), "")
 
 
 def _build_scan_error_message(
@@ -1340,27 +1470,45 @@ def _build_scan_error_message(
     error_kind: str | None = None,
 ) -> str | None:
     if cancelled:
-        return "CD-Scan wurde abgebrochen."
+        return "CD scan was cancelled."
     if returncode == 0:
         return None
     if error_kind == "release_selection_required" or release_candidates or release_options:
         return (
-            "Mehrere Releases fuer diese Disc-ID gefunden. "
-            "Bitte eine Release-ID auswaehlen und den Scan erneut starten."
+            "Multiple releases were found for this Disc ID. "
+            "Select a Release ID and scan again."
         )
     if error_kind == "no_release_found":
         return (
-            "Keine MusicBrainz-Release-Information fuer diese Disc gefunden. "
-            "Bitte Disc-ID bei MusicBrainz eintragen, erneut scannen oder ohne MusicBrainz fortfahren."
+            "No MusicBrainz release information was found for this disc. "
+            "Submit the Disc ID to MusicBrainz, scan again, or continue without MusicBrainz."
         )
+    if error_kind == "release_selection_invalid":
+        return "The selected MusicBrainz release is not valid for this Disc ID."
+    if error_kind == "disc_number_invalid":
+        return "The selected disc number is not valid for this MusicBrainz release."
+    if error_kind == "musicbrainz_lookup_failed":
+        return "MusicBrainz lookup failed. Try again later or scan without MusicBrainz."
+    if error_kind == "accuraterip_lookup_failed":
+        return "AccurateRip lookup failed. Try again later or scan without AccurateRip."
+    if error_kind == "cover_art_lookup_failed":
+        return "Cover art lookup failed. Disable Cover Art DB or set manual cover art."
+    if error_kind == "device_open_failed":
+        return "cyanrip could not open the selected optical drive."
+    if error_kind == "offset_unset":
+        return "Drive offset is unset. Use a manual offset or let cyanrip find it."
+    if error_kind == "drive_offset_not_found":
+        return "cyanrip could not determine the drive offset from AccurateRip data."
+    if error_kind == "output_path_invalid":
+        return "cyanrip could not create an output file. Check output directory and naming schemes."
 
     lines = [line.strip() for line in str(raw_output or "").splitlines() if line.strip()]
     for line in reversed(lines[-40:]):
         lowered = line.lower()
-        if lowered.startswith("error") or "fehl" in lowered:
+        if lowered.startswith("error") or "failed" in lowered or "failure" in lowered:
             return line
 
-    return f"CD-Scan fehlgeschlagen (Exit-Code {returncode})."
+    return f"CD scan failed (exit code {returncode})."
 
 
 def _effective_settings(raw_settings: dict[str, Any] | None) -> dict[str, Any]:
@@ -1521,7 +1669,7 @@ def _fetch_remote_cover(
 ) -> tuple[bytes, str]:
     parsed = urlparse(raw_url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError("Cover-URL muss mit http:// oder https:// beginnen.")
+        raise ValueError("Cover URL must start with http:// or https://.")
 
     now = time.time()
     with lock:
@@ -1537,24 +1685,24 @@ def _fetch_remote_cover(
     request = Request(
         raw_url,
         headers={
-            "User-Agent": "cyanrip-webui/1.0 (+cover-proxy)",
+            "User-Agent": f"cyanrip-webui/{APP_VERSION} (+cover-proxy)",
             "Accept": "image/*,*/*;q=0.8",
             "Connection": "close",
         },
     )
 
-    last_error = "Cover konnte nicht geladen werden."
+    last_error = "Cover could not be loaded."
     for attempt in range(1, 5):
         try:
             with urlopen(request, timeout=18) as response:
                 body = response.read(COVER_FETCH_MAX_BYTES + 1)
                 if len(body) > COVER_FETCH_MAX_BYTES:
-                    raise ValueError("Cover-Datei ist zu gross fuer die Vorschau.")
+                    raise ValueError("Cover image is too large for preview.")
 
                 content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
                 mime = _resolve_cover_mime(content_type, raw_url)
                 if not mime.startswith("image/"):
-                    raise ValueError("Cover-URL liefert kein Bildformat.")
+                    raise ValueError("Cover URL did not return an image.")
 
                 with lock:
                     _cleanup_cover_cache(cache)
@@ -1567,11 +1715,11 @@ def _fetch_remote_cover(
         except ValueError:
             raise
         except HTTPError as exc:
-            last_error = f"Cover-URL lieferte HTTP {exc.code}."
+            last_error = f"Cover URL returned HTTP {exc.code}."
         except URLError as exc:
-            last_error = f"Cover-URL konnte nicht erreicht werden: {exc.reason}."
+            last_error = f"Cover URL could not be reached: {exc.reason}."
         except OSError as exc:
-            last_error = f"Cover-Download fehlgeschlagen: {exc}."
+            last_error = f"Cover download failed: {exc}."
 
         if attempt < 4:
             time.sleep(0.4 * attempt)
@@ -1608,12 +1756,12 @@ def _cleanup_cover_cache(cache: dict[str, dict[str, Any]]) -> None:
 def _list_directories(raw_path: str) -> dict[str, Any]:
     target = _resolve_directory_for_browse(raw_path)
     if not target.is_dir():
-        raise ValueError(f"Kein Verzeichnis: {target}")
+        raise ValueError(f"Not a directory: {target}")
 
     try:
         entries = list(target.iterdir())
     except PermissionError as exc:
-        raise PermissionError(f"Kein Zugriff auf Verzeichnis: {target}") from exc
+        raise PermissionError(f"No access to directory: {target}") from exc
 
     directories: list[dict[str, Any]] = []
     for entry in sorted(entries, key=lambda item: item.name.lower()):
@@ -1637,6 +1785,87 @@ def _list_directories(raw_path: str) -> dict[str, Any]:
     }
 
 
+def _list_cover_files(raw_path: str) -> dict[str, Any]:
+    target = _resolve_directory_for_browse(raw_path)
+    if not target.is_dir():
+        raise ValueError(f"Not a directory: {target}")
+
+    try:
+        entries = list(target.iterdir())
+    except PermissionError as exc:
+        raise PermissionError(f"No access to directory: {target}") from exc
+
+    directories: list[dict[str, Any]] = []
+    files: list[dict[str, Any]] = []
+    for entry in sorted(entries, key=lambda item: (not item.is_dir(), item.name.lower())):
+        if entry.is_dir():
+            directories.append(
+                {
+                    "name": entry.name,
+                    "path": str(entry),
+                    "hidden": entry.name.startswith("."),
+                    "type": "directory",
+                }
+            )
+            continue
+
+        if not entry.is_file():
+            continue
+        mime, _ = mimetypes.guess_type(str(entry))
+        if not mime or not mime.startswith("image/"):
+            continue
+        files.append(
+            {
+                "name": entry.name,
+                "path": str(entry),
+                "hidden": entry.name.startswith("."),
+                "type": "file",
+                "mime": mime,
+            }
+        )
+
+    parent = target.parent if target.parent != target else None
+    return {
+        "path": str(target),
+        "parent": str(parent) if parent is not None else None,
+        "home": str(Path.home()),
+        "project_root": str(APP_DATA_ROOT),
+        "directories": directories,
+        "files": files,
+    }
+
+
+def _store_uploaded_cover(*, data_url: str, filename: str) -> dict[str, Any]:
+    match = re.match(r"^data:(image/[a-zA-Z0-9.+-]+);base64,(.+)$", data_url, re.DOTALL)
+    if not match:
+        raise ValueError("Uploaded cover must be an image data URL.")
+
+    mime = match.group(1).lower()
+    encoded = match.group(2).strip()
+    try:
+        data = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("Uploaded cover data is not valid base64.") from exc
+
+    if not data:
+        raise ValueError("Uploaded cover is empty.")
+    if len(data) > COVER_UPLOAD_MAX_BYTES:
+        raise ValueError("Uploaded cover is too large.")
+
+    guessed_ext = mimetypes.guess_extension(mime) or Path(filename).suffix or ".img"
+    safe_stem = _safe_filename(Path(filename).stem or "cover")
+    upload_dir = Path(os.environ.get("TMPDIR") or "/tmp") / "cyanrip-webui" / "cover-uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    target = upload_dir / f"{uuid.uuid4().hex}-{safe_stem}{guessed_ext}"
+    target.write_bytes(data)
+    return {"path": str(target), "mime": mime}
+
+
+def _safe_filename(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", str(value or "").strip()).strip(".-")
+    return cleaned[:80] or "cover"
+
+
 def _resolve_directory_for_browse(raw_path: str) -> Path:
     candidate_raw = str(raw_path or "").strip()
     if not candidate_raw:
@@ -1655,7 +1884,7 @@ def _resolve_directory_for_browse(raw_path: str) -> Path:
         parent = candidate.parent
         if parent.exists() and parent.is_dir():
             return parent
-        raise ValueError(f"Pfad ist kein Verzeichnis: {candidate}")
+        raise ValueError(f"Path is not a directory: {candidate}")
 
     parent = candidate.parent
     while parent != parent.parent and not parent.exists():
@@ -1664,7 +1893,7 @@ def _resolve_directory_for_browse(raw_path: str) -> Path:
     if parent.exists() and parent.is_dir():
         return parent.resolve()
 
-    raise ValueError(f"Ungueltiger Verzeichnispfad: {candidate}")
+    raise ValueError(f"Invalid directory path: {candidate}")
 
 
 def _resolve_working_directory(raw_value: str) -> str:
@@ -1676,7 +1905,7 @@ def _resolve_working_directory(raw_value: str) -> str:
         workdir = workdir.resolve()
 
     if workdir.exists() and not workdir.is_dir():
-        raise ValueError(f"Arbeitsverzeichnis ist keine Directory: {workdir}")
+        raise ValueError(f"Working directory is not a directory: {workdir}")
 
     workdir.mkdir(parents=True, exist_ok=True)
     return str(workdir)
@@ -1685,9 +1914,13 @@ def _resolve_working_directory(raw_value: str) -> str:
 def _resolve_binary_path(raw_value: str) -> str:
     value = (raw_value or "").strip()
     if not value:
-        raise ValueError("Pfad zur cyanrip-Binary fehlt.")
+        raise ValueError("Path to cyanrip binary is missing.")
 
-    if APP_IS_FROZEN and value in {"./bin/cyanrip", "bin/cyanrip"} and DEFAULT_BINARY_PATH != "./bin/cyanrip":
+    if (
+        APP_IS_FROZEN
+        and DEFAULT_BINARY_PATH != "./bin/cyanrip"
+        and (value in {"./bin/cyanrip", "bin/cyanrip"} or _is_appimage_mount_binary_path(value))
+    ):
         return DEFAULT_BINARY_PATH
 
     candidate = Path(value).expanduser()
@@ -1701,3 +1934,11 @@ def _resolve_binary_path(raw_value: str) -> str:
 
     # Bare command name, let PATH resolution handle it (e.g. "cyanrip").
     return value
+
+
+def _is_appimage_mount_binary_path(value: str) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return False
+    normalized = text.replace("\\", "/")
+    return bool(re.search(r"/\.mount[^/]*/usr/bin/cyanrip$", normalized))

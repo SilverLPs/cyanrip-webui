@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">cyanrip-webui screenshot placeholder</title>
+  <desc id="desc">Placeholder image for the first public README screenshot.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8fbff"/>
+      <stop offset="1" stop-color="#fff5dd"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9f6fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="1080" cy="90" r="210" fill="#f0a34a" opacity="0.22"/>
+  <circle cx="80" cy="650" r="260" fill="#0a7f86" opacity="0.18"/>
+  <rect x="90" y="80" width="1100" height="560" rx="28" fill="url(#card)" stroke="#9cc0d6" stroke-width="2"/>
+  <rect x="130" y="126" width="170" height="170" rx="18" fill="#0a7f86" opacity="0.22" stroke="#0a7f86"/>
+  <circle cx="215" cy="211" r="54" fill="none" stroke="#f0a34a" stroke-width="16"/>
+  <circle cx="215" cy="211" r="16" fill="#0a7f86"/>
+  <text x="330" y="165" fill="#13263a" font-family="Source Sans 3, Arial, sans-serif" font-size="54" font-weight="700">cyanrip-webui</text>
+  <text x="332" y="210" fill="#32506a" font-family="Source Sans 3, Arial, sans-serif" font-size="24">Screenshot placeholder for the public release page</text>
+  <rect x="130" y="340" width="460" height="210" rx="16" fill="#ffffff" stroke="#9cc0d6"/>
+  <rect x="630" y="340" width="500" height="210" rx="16" fill="#ffffff" stroke="#9cc0d6"/>
+  <line x1="165" y1="390" x2="535" y2="390" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+  <line x1="165" y1="440" x2="500" y2="440" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+  <line x1="165" y1="490" x2="550" y2="490" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+  <line x1="670" y1="390" x2="1080" y2="390" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+  <line x1="670" y1="440" x2="1030" y2="440" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+  <line x1="670" y1="490" x2="1100" y2="490" stroke="#9cc0d6" stroke-width="10" stroke-linecap="round"/>
+</svg>

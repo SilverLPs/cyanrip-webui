@@ -11,20 +11,24 @@
     <header class="hero">
       <div class="hero-main">
         <div class="hero-brand">
-          <img class="hero-logo" src="{{ url_for('static', filename='favicon.svg') }}" alt="cyanrip-webui logo" />
+          <img class="hero-logo" src="{{ url_for('static', filename='favicon.svg') }}" alt="cyanrip-webui logo" data-i18n-alt="hero.logoAlt" />
           <div class="hero-brand-text">
             <p class="eyebrow" data-i18n="hero.eyebrow">Accurate audio CD extraction</p>
             <h1>cyanrip-webui</h1>
             <p class="subtitle" data-i18n="hero.subtitle">
-              Integrated rip workflow for cyanrip. Scan, review metadata, then rip with reliable session tracking.
+              Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.
             </p>
+            <div class="hero-meta">
+              <span>{{ app_version }}</span>
+              <a href="{{ project_url }}" target="_blank" rel="noopener noreferrer" data-i18n="hero.github">GitHub project</a>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="hero-side">
         <div class="toolbar-row">
-          <div class="action-toolbar action-toolbar-disc" role="toolbar" aria-label="Disc actions">
+          <div class="action-toolbar action-toolbar-disc" role="toolbar" aria-label="Disc actions" data-i18n-aria-label="toolbar.discActions">
             <button id="action-primary" class="icon-button" type="button" data-i18n-title="action.scan" title="Scan disc">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 2a8 8 0 0 1 7.75 6H4.25A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.75-6h15.5A8 8 0 0 1 12 20Zm0-5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="currentColor"/></svg>
             </button>
@@ -39,7 +43,7 @@
             </button>
           </div>
 
-          <div class="icon-toolbar" role="toolbar" aria-label="Global toolbar">
+          <div class="icon-toolbar" role="toolbar" aria-label="Global toolbar" data-i18n-aria-label="toolbar.globalActions">
             <button id="theme-toggle" class="icon-button" type="button" title="Theme">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v1.3a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1Zm0 14.7a1 1 0 0 1 1 1V20a1 1 0 1 1-2 0v-1.3a1 1 0 0 1 1-1Zm9-6.7a1 1 0 0 1 0 2h-1.3a1 1 0 0 1 0-2H21ZM5.3 12a1 1 0 0 1 0 2H4a1 1 0 1 1 0-2h1.3Zm11.04-5.96a1 1 0 0 1 1.42 0l.92.92a1 1 0 1 1-1.42 1.42l-.92-.92a1 1 0 0 1 0-1.42Zm-9.08 9.08a1 1 0 0 1 1.42 0l.92.92a1 1 0 1 1-1.42 1.42l-.92-.92a1 1 0 0 1 0-1.42Zm10.5 2.34a1 1 0 0 1 0-1.42l.92-.92a1 1 0 1 1 1.42 1.42l-.92.92a1 1 0 0 1-1.42 0Zm-9.08-9.08a1 1 0 0 1 0-1.42l.92-.92a1 1 0 0 1 1.42 1.42l-.92.92a1 1 0 0 1-1.42 0ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" fill="currentColor"/></svg>
             </button>
@@ -135,11 +139,14 @@
         </div>
 
         <div class="disc-summary-wrap">
-          <div id="disc-cover-wrap" class="disc-cover-wrap is-empty">
-            <img id="disc-cover-preview" class="disc-cover-preview" alt="Album cover preview" />
+          <button id="disc-cover-wrap" class="disc-cover-wrap is-empty" type="button" data-i18n-title="cover.clickToEdit" title="Edit cover art">
+            <img id="disc-cover-preview" class="disc-cover-preview" alt="Album cover preview" data-i18n-alt="cover.previewAlt" />
             <div id="disc-cover-spinner" class="disc-cover-spinner is-hidden" aria-hidden="true"></div>
+          </button>
+          <div>
+            <div id="scan-summary" class="message"></div>
+            <button id="cover-manual-reset" class="text-button is-hidden" type="button" data-i18n="cover.resetManual">Reset manual cover</button>
           </div>
-          <div id="scan-summary" class="message"></div>
         </div>
 
         <div class="table-wrap">
@@ -211,6 +218,150 @@
           </label>
         </div>
 
+        <div class="scan-options-grid grid-3">
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableMb">Enable MusicBrainz</span>
+              <span class="hint" data-tip-key="hint.enableMb">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-mb">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-mb" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableAccurateRip">Enable AccurateRip</span>
+              <span class="hint" data-tip-key="hint.enableAccurateRip">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-accurip">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-accurip" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <div class="binary-toggle-field">
+            <span class="label-head">
+              <span data-i18n="metadata.enableCoverArtDb">Enable Cover Art DB</span>
+              <span class="hint" data-tip-key="hint.enableCoverArtDb">i</span>
+            </span>
+            <div class="toggle-row binary-toggle" data-binary-toggle="enable-coverart-db">
+              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
+              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
+            </div>
+            <input id="enable-coverart-db" class="visually-hidden-input" type="checkbox" />
+          </div>
+
+          <label>
+            <span data-i18n="metadata.coverArtSize">Cover art max size</span>
+            <select id="coverart-lookup-size"></select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" id="output-panel">
+        <h2 data-i18n="output.title">Output</h2>
+        <p class="small-note" data-i18n="output.note">Select formats and naming.</p>
+
+        <label>
+          <span class="label-head">
+            <span data-i18n="output.baseDirectory">Output base directory</span>
+            <span class="hint" data-tip-key="hint.baseDirectory">i</span>
+          </span>
+          <div class="toggle-row" data-group="outputDir-mode">
+            <button id="output-dir-mode-workdir" class="toggle-option" type="button" data-value="workdir" data-i18n="output.useWorkdir">Use settings directory</button>
+            <button id="output-dir-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="output.useManualDir">Manual directory</button>
+          </div>
+          <div id="output-directory-manual-row" class="inline-row">
+            <input id="output-directory-manual" type="text" spellcheck="false" />
+            <button id="browse-output-directory" type="button" data-i18n="button.browseDirectory">Browse</button>
+          </div>
+        </label>
+
+        <div class="outputs" id="outputs-container"></div>
+
+        <div class="grid-2">
+          <label>
+            <span data-i18n="output.bitrate">Bitrate kbps</span>
+            <input id="bitrate" type="number" min="1" />
+          </label>
+          <label>
+            <span class="label-head">
+              <span data-i18n="output.sanitation">Sanitation</span>
+              <span class="hint" data-tip-key="hint.sanitation">i</span>
+            </span>
+            <select id="sanitation"></select>
+          </label>
+        </div>
+
+        <p class="small-note scheme-tabs-note" data-i18n="output.schemeTabsHint">Choose one tab to edit its scheme.</p>
+        <div class="scheme-targets" role="tablist" aria-label="Scheme target selection" data-i18n-aria-label="output.schemeTargetSelection">
+          <button id="scheme-target-directory" class="scheme-target is-active" role="tab" aria-selected="true" type="button" data-target="directory-scheme" data-i18n="output.directoryScheme">Directory scheme</button>
+          <button id="scheme-target-track" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="track-scheme" data-i18n="output.trackScheme">Track scheme</button>
+          <button id="scheme-target-log" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="log-scheme" data-i18n="output.logScheme">Log scheme</button>
+          <button id="scheme-target-cue" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="cue-scheme" data-i18n="output.cueScheme">CUE scheme</button>
+        </div>
+
+        <div class="scheme-active-summary">
+          <strong id="scheme-active-title">Directory scheme</strong>
+          <span id="scheme-active-preview"></span>
+        </div>
+
+        <label>
+          <span class="label-head">
+            <span data-i18n="output.schemeMode">Scheme mode</span>
+            <span class="hint" data-tip-key="hint.schemeMode">i</span>
+          </span>
+          <div class="toggle-row" data-group="scheme-mode">
+            <button id="scheme-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
+            <button id="scheme-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="mode.manual">Manual</button>
+          </div>
+        </label>
+
+        <div class="is-hidden">
+          <div class="scheme-group" data-target="directory-scheme">
+            <label>
+              <span data-i18n="output.directoryScheme">Directory scheme</span>
+              <input id="directory-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="track-scheme">
+            <label>
+              <span data-i18n="output.trackScheme">Track scheme</span>
+              <input id="track-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="log-scheme">
+            <label>
+              <span data-i18n="output.logScheme">Log scheme</span>
+              <input id="log-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="scheme-group" data-target="cue-scheme">
+            <label>
+              <span data-i18n="output.cueScheme">CUE scheme</span>
+              <input id="cue-scheme" type="text" spellcheck="false" />
+            </label>
+          </div>
+        </div>
+
+        <div id="scheme-composer-area" class="scheme-composer">
+          <p class="small-note" data-i18n="output.schemeComposerNote">Build scheme using drag and drop tokens and text parts.</p>
+          <div id="scheme-tokens" class="scheme-palette"></div>
+          <div class="scheme-builder-row">
+            <input id="scheme-literal-input" type="text" data-i18n-placeholder="placeholder.schemeLiteral" placeholder="Literal text fragment" spellcheck="false" />
+            <button id="scheme-add-literal" type="button" data-i18n="button.addLiteral">Add text</button>
+            <button id="scheme-clear-active" type="button" data-i18n="button.clearScheme">Clear</button>
+          </div>
+          <div id="scheme-dropzone" class="scheme-dropzone"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="metadata-panel">
+        <h2 data-i18n="metadata.title">Metadata and misc</h2>
         <div class="ripping-splits">
           <label>
             <span class="label-head">
@@ -288,145 +439,8 @@
             </div>
           </label>
         </div>
-      </section>
 
-      <section class="panel" id="output-panel">
-        <h2 data-i18n="output.title">Output</h2>
-        <p class="small-note" data-i18n="output.note">Select formats and naming.</p>
-
-        <label>
-          <span class="label-head">
-            <span data-i18n="output.baseDirectory">Output base directory</span>
-            <span class="hint" data-tip-key="hint.baseDirectory">i</span>
-          </span>
-          <div class="toggle-row" data-group="outputDir-mode">
-            <button id="output-dir-mode-workdir" class="toggle-option" type="button" data-value="workdir" data-i18n="output.useWorkdir">Use settings directory</button>
-            <button id="output-dir-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="output.useManualDir">Manual directory</button>
-          </div>
-          <div id="output-directory-manual-row" class="inline-row">
-            <input id="output-directory-manual" type="text" spellcheck="false" />
-            <button id="browse-output-directory" type="button" data-i18n="button.browseDirectory">Browse</button>
-          </div>
-        </label>
-
-        <div class="outputs" id="outputs-container"></div>
-
-        <div class="grid-2">
-          <label>
-            <span data-i18n="output.bitrate">Bitrate kbps</span>
-            <input id="bitrate" type="number" min="1" />
-          </label>
-          <label>
-            <span class="label-head">
-              <span data-i18n="output.sanitation">Sanitation</span>
-              <span class="hint" data-tip-key="hint.sanitation">i</span>
-            </span>
-            <select id="sanitation"></select>
-          </label>
-        </div>
-
-        <p class="small-note scheme-tabs-note" data-i18n="output.schemeTabsHint">Choose one tab to edit its scheme.</p>
-        <div class="scheme-targets" role="tablist" aria-label="Scheme target selection">
-          <button id="scheme-target-directory" class="scheme-target is-active" role="tab" aria-selected="true" type="button" data-target="directory-scheme" data-i18n="output.directoryScheme">Directory scheme</button>
-          <button id="scheme-target-track" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="track-scheme" data-i18n="output.trackScheme">Track scheme</button>
-          <button id="scheme-target-log" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="log-scheme" data-i18n="output.logScheme">Log scheme</button>
-          <button id="scheme-target-cue" class="scheme-target" role="tab" aria-selected="false" type="button" data-target="cue-scheme" data-i18n="output.cueScheme">CUE scheme</button>
-        </div>
-
-        <div class="scheme-active-summary">
-          <strong id="scheme-active-title">Directory scheme</strong>
-          <span id="scheme-active-preview"></span>
-        </div>
-
-        <label>
-          <span class="label-head">
-            <span data-i18n="output.schemeMode">Scheme mode</span>
-            <span class="hint" data-tip-key="hint.schemeMode">i</span>
-          </span>
-          <div class="toggle-row" data-group="scheme-mode">
-            <button id="scheme-mode-auto" class="toggle-option" type="button" data-value="auto" data-i18n="mode.auto">Auto</button>
-            <button id="scheme-mode-manual" class="toggle-option" type="button" data-value="manual" data-i18n="mode.manual">Manual</button>
-          </div>
-        </label>
-
-        <div class="is-hidden">
-          <div class="scheme-group" data-target="directory-scheme">
-            <label>
-              <span data-i18n="output.directoryScheme">Directory scheme</span>
-              <input id="directory-scheme" type="text" spellcheck="false" />
-            </label>
-          </div>
-          <div class="scheme-group" data-target="track-scheme">
-            <label>
-              <span data-i18n="output.trackScheme">Track scheme</span>
-              <input id="track-scheme" type="text" spellcheck="false" />
-            </label>
-          </div>
-          <div class="scheme-group" data-target="log-scheme">
-            <label>
-              <span data-i18n="output.logScheme">Log scheme</span>
-              <input id="log-scheme" type="text" spellcheck="false" />
-            </label>
-          </div>
-          <div class="scheme-group" data-target="cue-scheme">
-            <label>
-              <span data-i18n="output.cueScheme">CUE scheme</span>
-              <input id="cue-scheme" type="text" spellcheck="false" />
-            </label>
-          </div>
-        </div>
-
-        <div id="scheme-composer-area" class="scheme-composer">
-          <p class="small-note" data-i18n="output.schemeComposerNote">Build scheme using drag and drop tokens and text parts.</p>
-          <div id="scheme-tokens" class="scheme-palette"></div>
-          <div class="scheme-builder-row">
-            <input id="scheme-literal-input" type="text" data-i18n-placeholder="placeholder.schemeLiteral" placeholder="Literal text fragment" spellcheck="false" />
-            <button id="scheme-add-literal" type="button" data-i18n="button.addLiteral">Add text</button>
-            <button id="scheme-clear-active" type="button" data-i18n="button.clearScheme">Clear</button>
-          </div>
-          <div id="scheme-dropzone" class="scheme-dropzone"></div>
-        </div>
-      </section>
-
-      <section class="panel" id="metadata-panel">
-        <h2 data-i18n="metadata.title">Metadata and misc</h2>
         <div class="grid-3">
-          <div class="binary-toggle-field">
-            <span class="label-head">
-              <span data-i18n="metadata.enableMb">Enable MusicBrainz</span>
-              <span class="hint" data-tip-key="hint.enableMb">i</span>
-            </span>
-            <div class="toggle-row binary-toggle" data-binary-toggle="enable-mb">
-              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
-              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
-            </div>
-            <input id="enable-mb" class="visually-hidden-input" type="checkbox" />
-          </div>
-
-          <div class="binary-toggle-field">
-            <span class="label-head">
-              <span data-i18n="metadata.enableAccurateRip">Enable AccurateRip</span>
-              <span class="hint" data-tip-key="hint.enableAccurateRip">i</span>
-            </span>
-            <div class="toggle-row binary-toggle" data-binary-toggle="enable-accurip">
-              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
-              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
-            </div>
-            <input id="enable-accurip" class="visually-hidden-input" type="checkbox" />
-          </div>
-
-          <div class="binary-toggle-field">
-            <span class="label-head">
-              <span data-i18n="metadata.enableCoverArtDb">Enable Cover Art DB</span>
-              <span class="hint" data-tip-key="hint.enableCoverArtDb">i</span>
-            </span>
-            <div class="toggle-row binary-toggle" data-binary-toggle="enable-coverart-db">
-              <button class="toggle-option" type="button" data-value="on" data-i18n="mode.on">On</button>
-              <button class="toggle-option" type="button" data-value="off" data-i18n="mode.off">Off</button>
-            </div>
-            <input id="enable-coverart-db" class="visually-hidden-input" type="checkbox" />
-          </div>
-
           <div class="binary-toggle-field">
             <span class="label-head">
               <span data-i18n="metadata.enableEmbedding">Enable embedding</span>
@@ -463,19 +477,6 @@
             <input id="eject-on-success" class="visually-hidden-input" type="checkbox" />
           </div>
         </div>
-
-        <label>
-          <span class="label-head">
-            <span data-i18n="metadata.coverArt">Cover art</span>
-            <span class="hint" data-tip-key="hint.coverArt">i</span>
-          </span>
-          <textarea id="cover-arts" rows="4" data-i18n-placeholder="placeholder.coverArts" placeholder="Front=/tmp/cover.jpg&#10;2=/tmp/track2.jpg"></textarea>
-        </label>
-
-        <label>
-          <span data-i18n="metadata.coverArtSize">Cover art max size</span>
-          <select id="coverart-lookup-size"></select>
-        </label>
       </section>
 
     </main>
@@ -572,6 +573,45 @@
         <div class="modal-actions">
           <button id="directory-picker-cancel" type="button" data-i18n="directoryPicker.cancel">Cancel</button>
           <button id="directory-picker-select" class="accent" type="button" data-i18n="directoryPicker.select">Use this directory</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="cover-overlay" class="modal-overlay is-hidden" aria-hidden="true">
+      <div class="modal cover-modal" role="dialog" aria-modal="true" aria-labelledby="cover-modal-title">
+        <div class="modal-head">
+          <h2 id="cover-modal-title" data-i18n="cover.title">Manual cover art</h2>
+          <button id="cover-modal-close" class="icon-button" type="button" data-i18n-title="cover.close" title="Close cover dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="modal-body cover-modal-body">
+          <label>
+            <span data-i18n="cover.url">Cover URL</span>
+            <div class="inline-row">
+              <input id="cover-url-input" type="url" spellcheck="false" placeholder="https://example.com/cover.jpg" />
+              <button id="cover-url-apply" type="button" data-i18n="cover.useUrl">Use URL</button>
+            </div>
+          </label>
+
+          <label>
+            <span data-i18n="cover.localFile">Local image file</span>
+            <div class="inline-row">
+              <input id="cover-path-input" type="text" spellcheck="false" />
+              <button id="cover-path-browse" type="button" data-i18n="button.browseDirectory">Browse</button>
+              <button id="cover-path-apply" type="button" data-i18n="cover.useFile">Use file</button>
+            </div>
+          </label>
+
+          <label>
+            <span data-i18n="cover.upload">Upload from browser</span>
+            <input id="cover-upload-input" type="file" accept="image/*" />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button id="cover-modal-cancel" type="button" data-i18n="directoryPicker.cancel">Cancel</button>
         </div>
       </div>
     </div>

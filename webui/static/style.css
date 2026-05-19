@@ -305,6 +305,30 @@ h1 {
   min-height: 2.45rem;
 }
 
+.hero-meta {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--text-size-note);
+  color: var(--ink-soft);
+}
+
+.hero-meta span,
+.hero-meta a {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.16rem 0.48rem;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.hero-meta a {
+  color: var(--accent-strong);
+  text-decoration: none;
+  font-weight: var(--text-weight-strong);
+}
+
 .hero-side {
   display: flex;
   flex-direction: column;
@@ -1397,6 +1421,10 @@ label {
   background: rgba(10, 124, 156, 0.2);
 }
 
+.directory-picker-entry.is-file .directory-picker-entry-name {
+  font-weight: var(--text-weight-strong);
+}
+
 .directory-picker-entry-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -1438,10 +1466,24 @@ label {
   position: relative;
   width: 5.7rem;
   height: 5.7rem;
+  min-height: 5.7rem;
+  min-width: 5.7rem;
+  margin: 0;
+  padding: 0;
   border-radius: 10px;
   border: 1px solid var(--line);
   overflow: hidden;
   background: linear-gradient(145deg, rgba(8, 124, 154, 0.2), rgba(255, 178, 88, 0.26));
+  cursor: pointer;
+}
+
+.disc-cover-wrap:hover {
+  border-color: var(--accent);
+}
+
+.disc-cover-wrap.is-dirty {
+  border-color: #f09a19;
+  box-shadow: 0 0 0 2px rgba(240, 154, 25, 0.24);
 }
 
 .disc-cover-preview {
@@ -1494,6 +1536,23 @@ label {
 .track-meta-input.is-dirty {
   border-color: #f09a19;
   box-shadow: 0 0 0 1px rgba(240, 154, 25, 0.28);
+}
+
+.text-button {
+  width: auto;
+  min-height: 0;
+  height: auto;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: var(--text-weight-strong);
+  text-decoration: underline;
+}
+
+.text-button:hover {
+  background: transparent;
 }
 
 .scheme-group.is-active input {
@@ -2113,6 +2172,14 @@ body.advanced-open {
   gap: 0.3rem;
 }
 
+.cover-modal-body {
+  gap: 0.7rem;
+}
+
+.cover-modal .inline-row {
+  grid-template-columns: minmax(0, 1fr) 7rem 6.2rem;
+}
+
 #settings-overlay .modal-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -2329,6 +2396,10 @@ textarea {
   }
 
   .inline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cover-modal .inline-row {
     grid-template-columns: 1fr;
   }
 

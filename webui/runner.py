@@ -81,7 +81,7 @@ class CyanripJobRunner:
 
         with self._lock:
             if self._state == "running":
-                raise RuntimeError("Es laeuft bereits ein cyanrip-Prozess.")
+                raise RuntimeError("A cyanrip process is already running.")
 
             self._reset_for_new_job(command, shell_command, cwd)
 
@@ -101,12 +101,12 @@ class CyanripJobRunner:
             except FileNotFoundError as exc:
                 self._state = "failed"
                 self._finished_at = time.time()
-                self._append_log(f"Fehler: Binary nicht gefunden ({command[0]})")
-                raise FileNotFoundError(f"Binary nicht gefunden: {command[0]}") from exc
+                self._append_log(f"Error: binary not found ({command[0]})")
+                raise FileNotFoundError(f"Binary not found: {command[0]}") from exc
             except OSError as exc:
                 self._state = "failed"
                 self._finished_at = time.time()
-                self._append_log(f"Fehler beim Starten: {exc}")
+                self._append_log(f"Start failed: {exc}")
                 raise
 
             self._reader_thread = threading.Thread(target=self._stream_output, daemon=True)
@@ -121,7 +121,7 @@ class CyanripJobRunner:
                 return self.snapshot()
             self._stop_requested = True
             proc = self._process
-            self._append_log("Stop angefordert: versuche cyanrip sauber zu beenden...")
+            self._append_log("Stop requested: asking cyanrip to terminate cleanly...")
 
         assert proc is not None
         try:
@@ -135,7 +135,7 @@ class CyanripJobRunner:
     def reset_runtime_state(self) -> None:
         with self._lock:
             if self._state == "running" and self._process is not None:
-                raise RuntimeError("Ein laufender Rip-Prozess kann nicht zurueckgesetzt werden.")
+                raise RuntimeError("A running rip process cannot be reset.")
 
             self._state = "idle"
             self._job_id = None
@@ -266,8 +266,8 @@ class CyanripJobRunner:
         self._scan_last_error = None
         self._reset_rip_runtime_for_job(command)
 
-        self._append_log(f"Job {self._job_id} gestartet")
-        self._append_log(f"Arbeitsverzeichnis: {cwd}")
+        self._append_log(f"Job {self._job_id} started")
+        self._append_log(f"Working directory: {cwd}")
         self._append_log(f"Command: {shell_command}")
 
     def _reset_rip_runtime_for_job(self, command: list[str]) -> None:
@@ -440,13 +440,13 @@ class CyanripJobRunner:
                 if self._stop_requested:
                     self._state = "stopped"
                     self._mark_running_tracks_aborted()
-                    self._append_log("cyanrip wurde gestoppt.")
+                    self._append_log("cyanrip was stopped.")
                 elif returncode == 0:
                     self._state = "finished"
-                    self._append_log("cyanrip erfolgreich beendet.")
+                    self._append_log("cyanrip finished successfully.")
                 else:
                     self._state = "failed"
-                    self._append_log(f"cyanrip mit Exit-Code {returncode} beendet.")
+                    self._append_log(f"cyanrip exited with code {returncode}.")
 
                 self._stop_requested = False
 
@@ -708,7 +708,7 @@ class CyanripJobRunner:
 
         cwd = os.path.abspath(os.path.expanduser(working_directory))
         if not os.path.isdir(cwd):
-            raise NotADirectoryError(f"Arbeitsverzeichnis existiert nicht: {cwd}")
+            raise NotADirectoryError(f"Working directory does not exist: {cwd}")
         return cwd
 
     @staticmethod

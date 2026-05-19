@@ -68,12 +68,21 @@ def wait_until_ready(url: str, timeout_seconds: float = 20.0, alive_check: objec
     return False
 
 
-def notify_desktop(title: str, message: str) -> None:
+def notify_desktop(base_url: str) -> None:
     tool = shutil.which("notify-send")
     if not tool:
         return
+    icon = tray_icon_path()
+    command = [
+        tool,
+        "--app-name=cyanrip-webui",
+        "--icon",
+        str(icon),
+        "Application is now running in the background",
+        f"Open {base_url} in your browser. Use the system tray icon to open or quit cyanrip-webui.",
+    ]
     try:
-        subprocess.run([tool, title, message], check=False, timeout=4)
+        subprocess.run(command, check=False, timeout=4)
     except OSError:
         pass
 
@@ -83,20 +92,6 @@ def has_gui_session() -> bool:
         return True
     session_type = str(os.environ.get("XDG_SESSION_TYPE") or "").strip().lower()
     return session_type in {"wayland", "x11"}
-
-
-def tray_backend_candidates() -> list[str | None]:
-    preferred = os.environ.get("PYSTRAY_BACKEND")
-    if preferred:
-        return [preferred]
-
-    if not has_gui_session():
-        return [None]
-
-    candidates: list[str | None] = ["appindicator", "gtk"]
-    if str(os.environ.get("CYANRIP_WEBUI_ALLOW_XEMBED_TRAY") or "").strip().lower() in {"1", "true", "yes", "on"}:
-        candidates.append("xorg")
-    return candidates
 
 
 def resource_path(*parts: str) -> Path:
@@ -121,44 +116,6 @@ def tray_icon_path() -> Path:
         if candidate.exists():
             return candidate
     return resource_path("packaging", "cyanrip-webui.svg")
-
-
-def create_tray_image() -> object:
-    from PIL import Image, ImageDraw
-
-    size = 128
-    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-
-    draw.rounded_rectangle((10, 10, 118, 118), radius=18, fill=(10, 42, 55, 255))
-    draw.rounded_rectangle((18, 18, 110, 110), radius=14, outline=(47, 212, 197, 255), width=6)
-    draw.ellipse((39, 39, 89, 89), outline=(245, 178, 92, 255), width=8)
-    draw.ellipse((56, 56, 72, 72), fill=(47, 212, 197, 255))
-    return image
-
-
-def create_tray_icon(menu: object) -> object:
-    import pystray
-
-    return pystray.Icon("cyanrip-webui", create_tray_image(), "cyanrip-webui", menu=menu)
-
-
-def run_with_tray(base_url: str, stop_event: threading.Event) -> None:
-    import pystray
-
-    def open_ui(_icon: object, _item: object) -> None:
-        webbrowser.open(base_url, new=2)
-
-    def quit_ui(icon_obj: object, _item: object) -> None:
-        stop_event.set()
-        icon_obj.stop()
-
-    menu = pystray.Menu(
-        pystray.MenuItem("Open Web UI", open_ui, default=True),
-        pystray.MenuItem("Quit", quit_ui),
-    )
-    icon = create_tray_icon(menu)
-    icon.run()
 
 
 def run_with_qt_tray(base_url: str, stop_event: threading.Event) -> bool:
@@ -225,31 +182,7 @@ def run_with_qt_tray(base_url: str, stop_event: threading.Event) -> bool:
 
 
 def run_with_tray_fallbacks(base_url: str, stop_event: threading.Event) -> bool:
-    if run_with_qt_tray(base_url, stop_event):
-        return True
-
-    last_error: Exception | None = None
-    for candidate in tray_backend_candidates():
-        try:
-            if candidate:
-                os.environ["PYSTRAY_BACKEND"] = candidate
-            elif "PYSTRAY_BACKEND" in os.environ:
-                del os.environ["PYSTRAY_BACKEND"]
-            for module_name in list(sys.modules.keys()):
-                if module_name == "pystray" or module_name.startswith("pystray."):
-                    sys.modules.pop(module_name, None)
-            run_with_tray(base_url, stop_event)
-            return True
-        except KeyboardInterrupt:
-            stop_event.set()
-            return True
-        except Exception as exc:
-            last_error = exc
-            continue
-
-    if last_error is not None:
-        print(f"Tray integration unavailable: {last_error}")
-    return False
+    return run_with_qt_tray(base_url, stop_event)
 
 
 def main() -> int:
@@ -282,10 +215,7 @@ def main() -> int:
     if forced_headless:
         print(f"cyanrip-webui running at {base_url} (headless mode)")
     else:
-        notify_desktop(
-            "cyanrip-webui",
-            "The backend is running in the background. Use the tray icon to open or quit.",
-        )
+        notify_desktop(base_url)
 
     if forced_headless or args.no_tray:
         try:

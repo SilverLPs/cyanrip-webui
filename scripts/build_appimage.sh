@@ -10,7 +10,8 @@ APPDIR="${BUILD_DIR}/AppDir"
 OUT_DIR="${ROOT_DIR}/dist"
 
 APP_ID="cyanrip-webui"
-APPIMAGE_NAME="${APP_ID}-x86_64.AppImage"
+APP_VERSION="v0.1-alpha"
+APPIMAGE_NAME="${APP_ID}-${APP_VERSION}-x86_64.AppImage"
 
 mkdir -p "${BUILD_DIR}" "${OUT_DIR}"
 
@@ -42,8 +43,6 @@ pyinstaller \
   --collect-submodules flask_sock \
   --collect-submodules simple_websocket \
   --collect-submodules wsproto \
-  --collect-submodules pystray \
-  --collect-submodules PIL \
   --collect-all PySide6 \
   --add-data "${ROOT_DIR}/webui/templates:webui/templates" \
   --add-data "${ROOT_DIR}/webui/static:webui/static" \
@@ -59,7 +58,8 @@ if [[ ! -d "${RUNTIME_SRC_DIR}" ]]; then
 fi
 
 RUNTIME_DST_DIR="${APPDIR}/usr/lib/${APP_ID}"
-mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}" "${APPDIR}/usr/share/applications" "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+LICENSE_DIR="${APPDIR}/usr/share/licenses/${APP_ID}"
+mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}" "${APPDIR}/usr/share/applications" "${APPDIR}/usr/share/icons/hicolor/scalable/apps" "${LICENSE_DIR}"
 cp -a "${RUNTIME_SRC_DIR}/." "${RUNTIME_DST_DIR}/"
 
 if [[ ! -x "${ROOT_DIR}/bin/cyanrip" ]]; then
@@ -95,6 +95,12 @@ cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/usr/share/applications/$
 cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/${APP_ID}.svg"
 cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/${APP_ID}.svg"
 ln -s "${APP_ID}.svg" "${APPDIR}/.DirIcon"
+
+cp "${ROOT_DIR}/LICENSE" "${LICENSE_DIR}/LICENSE.cyanrip-webui.txt"
+cp "${ROOT_DIR}/THIRD_PARTY_LICENSES.md" "${LICENSE_DIR}/THIRD_PARTY_LICENSES.md"
+if [[ -f "${ROOT_DIR}/cyanrip-src/cyanrip-src-v0.9.3.1/LICENSE.md" ]]; then
+  cp "${ROOT_DIR}/cyanrip-src/cyanrip-src-v0.9.3.1/LICENSE.md" "${LICENSE_DIR}/LICENSE.cyanrip.txt"
+fi
 
 cat >"${APPDIR}/AppRun" <<'EOF'
 #!/usr/bin/env bash
