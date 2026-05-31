@@ -28,6 +28,17 @@ def _flatten(payload: dict[str, Any], prefix: str = "") -> set[str]:
     return keys
 
 
+def _flatten_values(payload: dict[str, Any], prefix: str = "") -> dict[str, str]:
+    values: dict[str, str] = {}
+    for key, value in payload.items():
+        dotted = f"{prefix}.{key}" if prefix else str(key)
+        if isinstance(value, dict):
+            values.update(_flatten_values(value, dotted))
+        else:
+            values[dotted] = str(value)
+    return values
+
+
 def _locale_names() -> list[str]:
     return sorted(path.stem for path in I18N_DIR.glob("*.json"))
 
@@ -39,6 +50,24 @@ class I18nTests(unittest.TestCase):
             keys = _flatten(_load_locale(locale))
             self.assertEqual(en_keys - keys, set(), f"Missing i18n keys in {locale}.json")
             self.assertEqual(keys - en_keys, set(), f"Unexpected i18n keys in {locale}.json")
+
+    def test_locale_values_are_not_empty(self) -> None:
+        for locale in _locale_names():
+            values = _flatten_values(_load_locale(locale))
+            empty = sorted(key for key, value in values.items() if not value.strip())
+            self.assertEqual(empty, [], f"Empty i18n values in {locale}.json")
+
+    def test_locale_placeholders_match_english(self) -> None:
+        placeholder_pattern = re.compile(r"\{[a-zA-Z0-9_]+\}")
+        en_values = _flatten_values(_load_locale("en"))
+        for locale in _locale_names():
+            values = _flatten_values(_load_locale(locale))
+            for key, english_value in en_values.items():
+                self.assertEqual(
+                    sorted(placeholder_pattern.findall(english_value)),
+                    sorted(placeholder_pattern.findall(values[key])),
+                    f"Placeholder mismatch in {locale}.json:{key}",
+                )
 
     def test_referenced_i18n_keys_exist_in_all_locales(self) -> None:
         files = [

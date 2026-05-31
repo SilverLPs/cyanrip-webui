@@ -1507,7 +1507,7 @@
     };
 
     const sessionCover = normalizeManualCover(session.manual_cover);
-    if (sessionCover) {
+    if (sessionCover && !manualCoverEquals(state.manualCover, sessionCover)) {
       state.manualCover = sessionCover;
       state.coverPreviewKey = "";
       renderDiscSummary();
@@ -1531,6 +1531,17 @@
       source,
       sourceType,
     };
+  }
+
+  function manualCoverEquals(left, right) {
+    if (!left || !right) {
+      return !left && !right;
+    }
+    return (
+      left.dirty === right.dirty &&
+      String(left.source || "") === String(right.source || "") &&
+      String(left.sourceType || "") === String(right.sourceType || "")
+    );
   }
 
   function applyDiscSnapshot(disc, tracks) {
