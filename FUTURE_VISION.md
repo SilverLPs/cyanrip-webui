@@ -7,3 +7,4 @@
 - Feature parity to EAC (at least as much as possible)
 - Audio preview for tracks on disk or ripped tracks
 - Basic but safe authentication. Multi-user would also be possible with own or shared workspaces, but thats low priority.
+- More ripper-backends than cyanrip, the user should be able to choose between pure cdparanoia, cyanrip, whipper, rubyripper etc.

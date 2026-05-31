@@ -257,6 +257,33 @@ To continue add metadata via -a or -t, or ignore via -N!
         self.assertEqual(response["status"], 200)
         self.assertIn("settings", response["body"])
 
+    def test_websocket_rpc_updates_manual_cover_session(self) -> None:
+        app = create_app()
+
+        response = _dispatch_ws_rpc(
+            app,
+            {
+                "id": 9,
+                "method": "POST",
+                "url": "/api/cover/session",
+                "body": {
+                    "manual_cover": {
+                        "source": "/tmp/cyanrip-webui/cover-uploads/manual.png",
+                        "sourceType": "upload",
+                    },
+                },
+            },
+        )
+
+        self.assertTrue(response["ok"])
+        self.assertEqual(
+            response["body"]["session"]["manual_cover"],
+            {
+                "source": "/tmp/cyanrip-webui/cover-uploads/manual.png",
+                "sourceType": "upload",
+            },
+        )
+
     def test_websocket_rpc_rejects_non_rpc_routes(self) -> None:
         app = create_app()
 

@@ -10,6 +10,7 @@ APPDIR="${BUILD_DIR}/AppDir"
 OUT_DIR="${ROOT_DIR}/dist"
 
 APP_ID="cyanrip-webui"
+APPSTREAM_ID="io.github.silverlps.cyanrip-webui"
 APP_VERSION="v0.1-alpha"
 APPIMAGE_NAME="${APP_ID}-${APP_VERSION}-x86_64.AppImage"
 
@@ -32,7 +33,7 @@ source "${VENV_DIR}/bin/activate"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r "${ROOT_DIR}/requirements.txt" pyinstaller
 
-pyinstaller \
+LC_ALL=C.UTF-8 LANG=C.UTF-8 pyinstaller \
   --noconfirm \
   --clean \
   --onedir \
@@ -43,7 +44,10 @@ pyinstaller \
   --collect-submodules flask_sock \
   --collect-submodules simple_websocket \
   --collect-submodules wsproto \
-  --collect-all PySide6 \
+  --hidden-import PySide6.QtCore \
+  --hidden-import PySide6.QtGui \
+  --hidden-import PySide6.QtWidgets \
+  --hidden-import PySide6.QtSvg \
   --add-data "${ROOT_DIR}/webui/templates:webui/templates" \
   --add-data "${ROOT_DIR}/webui/static:webui/static" \
   --add-data "${ROOT_DIR}/packaging:packaging" \
@@ -59,8 +63,10 @@ fi
 
 RUNTIME_DST_DIR="${APPDIR}/usr/lib/${APP_ID}"
 LICENSE_DIR="${APPDIR}/usr/share/licenses/${APP_ID}"
-mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}" "${APPDIR}/usr/share/applications" "${APPDIR}/usr/share/icons/hicolor/scalable/apps" "${LICENSE_DIR}"
+METAINFO_DIR="${APPDIR}/usr/share/metainfo"
+mkdir -p "${APPDIR}/usr/bin" "${RUNTIME_DST_DIR}" "${APPDIR}/usr/share/applications" "${APPDIR}/usr/share/icons/hicolor/scalable/apps" "${LICENSE_DIR}" "${METAINFO_DIR}"
 cp -a "${RUNTIME_SRC_DIR}/." "${RUNTIME_DST_DIR}/"
+find "${RUNTIME_DST_DIR}" -path "*/PySide6/Qt/plugins/imageformats/libqtiff.so" -delete
 
 if [[ ! -x "${ROOT_DIR}/bin/cyanrip" ]]; then
   echo "Bundled cyanrip binary missing or not executable: ${ROOT_DIR}/bin/cyanrip"
@@ -92,6 +98,7 @@ chmod +x "${APPDIR}/usr/bin/${APP_ID}"
 
 cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/${APP_ID}.desktop"
 cp "${ROOT_DIR}/packaging/${APP_ID}.desktop" "${APPDIR}/usr/share/applications/${APP_ID}.desktop"
+cp "${ROOT_DIR}/packaging/${APP_ID}.appdata.xml" "${METAINFO_DIR}/${APPSTREAM_ID}.appdata.xml"
 cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/${APP_ID}.svg"
 cp "${ROOT_DIR}/packaging/${APP_ID}.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/${APP_ID}.svg"
 ln -s "${APP_ID}.svg" "${APPDIR}/.DirIcon"

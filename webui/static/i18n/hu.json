@@ -46,9 +46,9 @@
   },
   "hero": {
     "logoAlt": "cyanrip-webui logo",
-    "eyebrow": "Accurate audio CD extraction",
+    "eyebrow": "Lemez beolvasása",
     "subtitle": "Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.",
-    "github": "GitHub project"
+    "github": "GitHub"
   },
   "toolbar": {
     "discActions": "Disc actions",
@@ -72,28 +72,28 @@
     }
   },
   "status": {
-    "title": "Status",
-    "idle": "Idle",
-    "scanning": "Scanning",
-    "scanned": "Scanned",
-    "scanRequired": "Rescan required",
-    "ripping": "Ripping",
-    "ripped": "Ripped",
-    "failed": "Failed",
-    "stopped": "Stopped",
-    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "title": "Állapot",
+    "idle": "Üresjárat",
+    "scanning": "Beolvasás",
+    "scanned": "Beolvasva",
+    "scanRequired": "Új beolvasás szükséges",
+    "ripping": "Rippelés",
+    "ripped": "Rippelve",
+    "failed": "Sikertelen",
+    "stopped": "Leállítva",
+    "tracks": "Sávok: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning",
+    "etaScanning": "Beolvasás",
     "session": "Session: {id}"
   },
   "session": {
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "Lemez beolvasása",
+    "start": "Rippelés indítása",
+    "stop": "Aktuális művelet leállítása",
+    "eject": "Meghajtó nyitása",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,17 +119,17 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
+    "title": "Lemez",
     "empty": "No disc scanned yet.",
     "meta": {
       "album": "Album",
-      "artist": "Album artist",
-      "date": "Date"
+      "artist": "Album előadója",
+      "date": "Dátum"
     },
     "summary": {
       "album": "Album",
-      "artist": "Artist",
-      "tracks": "Tracks",
+      "artist": "Előadó",
+      "tracks": "Sávok",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "Cím",
+    "artist": "Előadó",
+    "duration": "Időtartam",
+    "status": "Állapot",
+    "progress": "Folyamat",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -176,20 +176,20 @@
     "findDriveOffset": "Find drive offset"
   },
   "mode": {
-    "auto": "Auto",
-    "manual": "Manual",
-    "select": "Select",
-    "path": "Path",
-    "on": "On",
-    "off": "Off",
+    "auto": "Automatikus",
+    "manual": "Kézi",
+    "select": "Kiválasztás",
+    "path": "Útvonal",
+    "on": "Be",
+    "off": "Ki",
     "max": "Max",
     "numeric": "Numeric",
-    "none": "None",
-    "force": "Force",
-    "disable": "Disable"
+    "none": "Nincs",
+    "force": "Kényszerítés",
+    "disable": "Letiltás"
   },
   "output": {
-    "title": "Output",
+    "title": "Kimenet",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -236,13 +236,13 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "Beállítások",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "Mentés",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
@@ -251,8 +251,8 @@
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "Frissítés",
+    "browseDirectory": "Tallózás",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
@@ -273,19 +273,19 @@
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
-    "select": "Use this directory",
+    "cancel": "Mégse",
+    "select": "Mappa használata",
     "empty": "No subdirectories found."
   },
   "drive": {
     "noneFound": "No drives detected"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "Észlelve",
+    "queued": "Sorban",
+    "running": "Rippelés",
+    "done": "Kész",
+    "error": "Hiba",
     "aborted": "Aborted"
   },
   "hint": {
@@ -345,7 +345,7 @@
     "ejectDone": "Drive opened."
   },
   "error": {
-    "trackLabel": "Track number",
+    "trackLabel": "Sávok",
     "integer": "Integer",
     "integerLabel": "{label} is not a valid integer.",
     "float": "Invalid numeric value: {value}",
@@ -354,20 +354,20 @@
     "coverArtIncomplete": "Cover art line {line} is incomplete.",
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
-    "scanRequired": "Scan the disc first to start ripping.",
+    "scanRequired": "A rippelés indításához először olvasd be a lemezt.",
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
-    "scanFailedExitCode": "CD scan failed (exit code {code}).",
+    "scanFailedExitCode": "A CD beolvasása sikertelen (kilépési kód: {code}).",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
-    "generic": "An error occurred.",
-    "binaryPathMissing": "Path to cyanrip binary is missing.",
-    "binaryNotFound": "Binary not found: {path}",
-    "binaryPermission": "Binary is not executable: {path}",
+    "generic": "Hiba történt.",
+    "binaryPathMissing": "Hiányzik a cyanrip futtatható fájl útvonala.",
+    "binaryNotFound": "A futtatható fájl nem található: {path}",
+    "binaryPermission": "A futtatható fájl nem indítható: {path}",
     "binaryProbeTimeout": "Binary probe timed out.",
     "binaryProbeFailed": "Binary probe failed: {message}",
     "binaryProbeExitCode": "Binary probe failed with exit code {code}.",
-    "directoryPermission": "No access to directory: {path}",
+    "directoryPermission": "Nincs hozzáférés a mappához: {path}",
     "directoryInvalid": "Invalid directory path: {path}",
     "directoryReadFailed": "Directory could not be read.",
     "coverSourceMissing": "Cover path or URL is missing.",
@@ -375,13 +375,13 @@
     "coverFileNotFound": "Cover file was not found.",
     "coverUnsupportedImage": "File is not a supported image.",
     "coverUploadInvalid": "Uploaded cover is invalid.",
-    "coverUploadFailed": "Cover upload failed.",
+    "coverUploadFailed": "A borító feltöltése sikertelen.",
     "coverFileSelectRequired": "Select an image file first.",
     "coverUrlInvalid": "Enter a cover URL starting with http:// or https://.",
     "coverPathRequired": "Enter or select a cover image path.",
     "deviceIdMissing": "device_id is missing.",
     "offsetInvalid": "Offset must be an integer.",
-    "jobRunning": "A scan or rip job is still running. Stop it first.",
+    "jobRunning": "Egy beolvasási vagy rippelési feladat még fut. Előbb állítsd le.",
     "ripAlreadyRunning": "A rip job is already running. Stop it or wait first.",
     "scanAlreadyRunning": "A CD scan is already running.",
     "scanStartFailed": "CD scan could not be started.",
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "Kézi borító",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "URL használata",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "Fájl használata",
+    "upload": "Feltöltés böngészőből"
   },
   "filePicker": {
     "title": "Select image file",

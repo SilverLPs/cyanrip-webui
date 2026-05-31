@@ -44,6 +44,7 @@ Normal JSON actions use WebSocket RPC after startup:
 - `/api/status`
 - `/api/logs`
 - `/api/cover/upload`
+- `/api/cover/session`
 
 HTTP fallback for these JSON actions is disabled by default and can be enabled with `--enable-http-fallback`.
 
@@ -69,6 +70,11 @@ Packaging notes:
 - Frontend storage must not persist `/tmp/.mount.../usr/bin/cyanrip`; it stores `./bin/cyanrip` as the portable marker and resolves it to the bundled binary at runtime.
 - Runtime output defaults to `output` next to the AppImage.
 - License notices are copied into `usr/share/licenses/cyanrip-webui`.
+- The build intentionally collects only the PySide6 modules used by the launcher (`QtCore`, `QtGui`, `QtWidgets`, `QtSvg`). Avoid `--collect-all PySide6`; it pulls unused QML, WebEngine, SQL, Designer, and platform plugins and creates noisy missing-library warnings.
+- PyInstaller is run with `LC_ALL=C.UTF-8 LANG=C.UTF-8` so localized `ldconfig` output does not produce parser warnings while Qt still sees a UTF-8 locale.
+- AppStream metadata is copied from `packaging/cyanrip-webui.appdata.xml` with the reverse-DNS component ID `io.github.silverlps.cyanrip-webui`. Current appimagetool builds may still print an optional metadata warning because they look for `cyanrip-webui.appdata.xml` based on the desktop filename, while appstreamcli warns if that filename does not match the reverse-DNS component ID. This is harmless for AppImage execution.
+- PyInstaller may warn about Qt's optional `libqtiff.so` imageformat plugin if `libtiff.so.5` is not available on the build host. The build removes that unused TIFF plugin before packaging. The application does not load TIFF images; tray and desktop icons use SVG, and cover handling is browser/server-side.
+- appimagetool may download the type-2 runtime if it is not cached locally. That is expected and not an application issue.
 
 ## Tests
 

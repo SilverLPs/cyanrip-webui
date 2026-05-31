@@ -46,9 +46,9 @@
   },
   "hero": {
     "logoAlt": "cyanrip-webui logo",
-    "eyebrow": "Accurate audio CD extraction",
+    "eyebrow": "Skanna skiva",
     "subtitle": "Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.",
-    "github": "GitHub project"
+    "github": "GitHub"
   },
   "toolbar": {
     "discActions": "Disc actions",
@@ -73,27 +73,27 @@
   },
   "status": {
     "title": "Status",
-    "idle": "Idle",
-    "scanning": "Scanning",
-    "scanned": "Scanned",
-    "scanRequired": "Rescan required",
-    "ripping": "Ripping",
-    "ripped": "Ripped",
-    "failed": "Failed",
-    "stopped": "Stopped",
-    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "idle": "Inaktiv",
+    "scanning": "Skannar",
+    "scanned": "Skannad",
+    "scanRequired": "Ny skanning krävs",
+    "ripping": "Rippar",
+    "ripped": "Rippad",
+    "failed": "Misslyckades",
+    "stopped": "Stoppad",
+    "tracks": "Spår: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning",
+    "etaScanning": "Skannar",
     "session": "Session: {id}"
   },
   "session": {
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "Skanna skiva",
+    "start": "Starta rippning",
+    "stop": "Stoppa aktuell åtgärd",
+    "eject": "Öppna enhet",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,17 +119,17 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
+    "title": "Skiva",
     "empty": "No disc scanned yet.",
     "meta": {
       "album": "Album",
-      "artist": "Album artist",
-      "date": "Date"
+      "artist": "Albumartist",
+      "date": "Datum"
     },
     "summary": {
       "album": "Album",
       "artist": "Artist",
-      "tracks": "Tracks",
+      "tracks": "Spår",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
+    "title": "Titel",
     "artist": "Artist",
-    "duration": "Duration",
+    "duration": "Varaktighet",
     "status": "Status",
-    "progress": "Progress",
+    "progress": "Förlopp",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -176,20 +176,20 @@
     "findDriveOffset": "Find drive offset"
   },
   "mode": {
-    "auto": "Auto",
-    "manual": "Manual",
-    "select": "Select",
-    "path": "Path",
-    "on": "On",
-    "off": "Off",
+    "auto": "Automatiskt",
+    "manual": "Manuell",
+    "select": "Välj",
+    "path": "Sökväg",
+    "on": "På",
+    "off": "Av",
     "max": "Max",
     "numeric": "Numeric",
-    "none": "None",
-    "force": "Force",
-    "disable": "Disable"
+    "none": "Ingen",
+    "force": "Tvinga",
+    "disable": "Inaktivera"
   },
   "output": {
-    "title": "Output",
+    "title": "Utdata",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -236,13 +236,13 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "Inställningar",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "Spara",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
@@ -251,8 +251,8 @@
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "Uppdatera",
+    "browseDirectory": "Bläddra",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
@@ -273,19 +273,19 @@
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
-    "select": "Use this directory",
+    "cancel": "Avbryt",
+    "select": "Använd den här mappen",
     "empty": "No subdirectories found."
   },
   "drive": {
     "noneFound": "No drives detected"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "Upptäckt",
+    "queued": "I kö",
+    "running": "Rippar",
+    "done": "Klar",
+    "error": "Fel",
     "aborted": "Aborted"
   },
   "hint": {
@@ -345,7 +345,7 @@
     "ejectDone": "Drive opened."
   },
   "error": {
-    "trackLabel": "Track number",
+    "trackLabel": "Spår",
     "integer": "Integer",
     "integerLabel": "{label} is not a valid integer.",
     "float": "Invalid numeric value: {value}",
@@ -354,20 +354,20 @@
     "coverArtIncomplete": "Cover art line {line} is incomplete.",
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
-    "scanRequired": "Scan the disc first to start ripping.",
+    "scanRequired": "Skanna skivan först för att starta rippning.",
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
-    "scanFailedExitCode": "CD scan failed (exit code {code}).",
+    "scanFailedExitCode": "CD-skanning misslyckades (slutkod {code}).",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
-    "generic": "An error occurred.",
-    "binaryPathMissing": "Path to cyanrip binary is missing.",
-    "binaryNotFound": "Binary not found: {path}",
-    "binaryPermission": "Binary is not executable: {path}",
+    "generic": "Ett fel uppstod.",
+    "binaryPathMissing": "Sökvägen till cyanrip-binären saknas.",
+    "binaryNotFound": "Binär hittades inte: {path}",
+    "binaryPermission": "Binären är inte körbar: {path}",
     "binaryProbeTimeout": "Binary probe timed out.",
     "binaryProbeFailed": "Binary probe failed: {message}",
     "binaryProbeExitCode": "Binary probe failed with exit code {code}.",
-    "directoryPermission": "No access to directory: {path}",
+    "directoryPermission": "Ingen åtkomst till mapp: {path}",
     "directoryInvalid": "Invalid directory path: {path}",
     "directoryReadFailed": "Directory could not be read.",
     "coverSourceMissing": "Cover path or URL is missing.",
@@ -375,13 +375,13 @@
     "coverFileNotFound": "Cover file was not found.",
     "coverUnsupportedImage": "File is not a supported image.",
     "coverUploadInvalid": "Uploaded cover is invalid.",
-    "coverUploadFailed": "Cover upload failed.",
+    "coverUploadFailed": "Uppladdning av omslag misslyckades.",
     "coverFileSelectRequired": "Select an image file first.",
     "coverUrlInvalid": "Enter a cover URL starting with http:// or https://.",
     "coverPathRequired": "Enter or select a cover image path.",
     "deviceIdMissing": "device_id is missing.",
     "offsetInvalid": "Offset must be an integer.",
-    "jobRunning": "A scan or rip job is still running. Stop it first.",
+    "jobRunning": "Ett skannings- eller rippningsjobb kör fortfarande. Stoppa det först.",
     "ripAlreadyRunning": "A rip job is already running. Stop it or wait first.",
     "scanAlreadyRunning": "A CD scan is already running.",
     "scanStartFailed": "CD scan could not be started.",
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "Manuellt omslag",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "Använd URL",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "Använd fil",
+    "upload": "Ladda upp från webbläsare"
   },
   "filePicker": {
     "title": "Select image file",

@@ -9,47 +9,47 @@
   const THEME_ORDER = ["auto", "dark", "light"];
 
   const LOCALE_LABELS = {
-    en: "English / English",
-    de: "Deutsch / German",
-    es: "Español / Spanish",
-    fr: "Français / French",
-    pt: "Português / Portuguese",
-    ru: "Русский / Russian",
-    zh: "中文 / Chinese",
-    ja: "日本語 / Japanese",
-    ko: "한국어 / Korean",
-    it: "Italiano / Italian",
-    nl: "Nederlands / Dutch",
-    pl: "Polski / Polish",
-    tr: "Türkçe / Turkish",
-    ar: "العربية / Arabic",
-    hi: "हिन्दी / Hindi",
-    id: "Bahasa Indonesia / Indonesian",
-    vi: "Tiếng Việt / Vietnamese",
-    th: "ไทย / Thai",
-    fa: "فارسی / Persian",
-    uk: "Українська / Ukrainian",
-    cs: "Čeština / Czech",
-    sv: "Svenska / Swedish",
-    da: "Dansk / Danish",
-    fi: "Suomi / Finnish",
-    no: "Norsk / Norwegian",
-    el: "Ελληνικά / Greek",
-    he: "עברית / Hebrew",
-    ro: "Română / Romanian",
-    hu: "Magyar / Hungarian",
-    bg: "Български / Bulgarian",
-    sk: "Slovenčina / Slovak",
-    sl: "Slovenščina / Slovenian",
-    hr: "Hrvatski / Croatian",
-    sr: "Српски / Serbian",
-    lt: "Lietuvių / Lithuanian",
-    lv: "Latviešu / Latvian",
-    et: "Eesti / Estonian",
-    ms: "Bahasa Melayu / Malay",
-    fil: "Filipino / Filipino",
-    bn: "বাংলা / Bengali",
-    ur: "اردو / Urdu",
+    en: "🇬🇧 English / English",
+    de: "🇩🇪 Deutsch / German",
+    es: "🇪🇸 Español / Spanish",
+    fr: "🇫🇷 Français / French",
+    pt: "🇵🇹 Português / Portuguese",
+    ru: "🇷🇺 Русский / Russian",
+    zh: "🇨🇳 中文 / Chinese",
+    ja: "🇯🇵 日本語 / Japanese",
+    ko: "🇰🇷 한국어 / Korean",
+    it: "🇮🇹 Italiano / Italian",
+    nl: "🇳🇱 Nederlands / Dutch",
+    pl: "🇵🇱 Polski / Polish",
+    tr: "🇹🇷 Türkçe / Turkish",
+    ar: "🇸🇦 العربية / Arabic",
+    hi: "🇮🇳 हिन्दी / Hindi",
+    id: "🇮🇩 Bahasa Indonesia / Indonesian",
+    vi: "🇻🇳 Tiếng Việt / Vietnamese",
+    th: "🇹🇭 ไทย / Thai",
+    fa: "🇮🇷 فارسی / Persian",
+    uk: "🇺🇦 Українська / Ukrainian",
+    cs: "🇨🇿 Čeština / Czech",
+    sv: "🇸🇪 Svenska / Swedish",
+    da: "🇩🇰 Dansk / Danish",
+    fi: "🇫🇮 Suomi / Finnish",
+    no: "🇳🇴 Norsk / Norwegian",
+    el: "🇬🇷 Ελληνικά / Greek",
+    he: "🇮🇱 עברית / Hebrew",
+    ro: "🇷🇴 Română / Romanian",
+    hu: "🇭🇺 Magyar / Hungarian",
+    bg: "🇧🇬 Български / Bulgarian",
+    sk: "🇸🇰 Slovenčina / Slovak",
+    sl: "🇸🇮 Slovenščina / Slovenian",
+    hr: "🇭🇷 Hrvatski / Croatian",
+    sr: "🇷🇸 Српски / Serbian",
+    lt: "🇱🇹 Lietuvių / Lithuanian",
+    lv: "🇱🇻 Latviešu / Latvian",
+    et: "🇪🇪 Eesti / Estonian",
+    ms: "🇲🇾 Bahasa Melayu / Malay",
+    fil: "🇵🇭 Filipino / Filipino",
+    bn: "🇧🇩 বাংলা / Bengali",
+    ur: "🇵🇰 اردو / Urdu",
   };
 
   const COOKIE_THEME = "cyanrip_theme_mode";
@@ -130,6 +130,7 @@
     coverPreviewKey: "",
     coverRetryAfterMs: 0,
     coverRetryKey: "",
+    manualCoverSyncTimer: null,
     scanIssue: {
       kind: null,
       releaseCandidates: [],
@@ -2112,6 +2113,7 @@
     renderDiscSummary();
     debouncePreview();
     saveUiPreferencesDebounced();
+    syncManualCoverSessionDebounced();
   }
 
   function resetManualCover() {
@@ -2124,6 +2126,22 @@
     renderDiscSummary();
     debouncePreview();
     saveUiPreferencesDebounced();
+    syncManualCoverSession(null);
+  }
+
+  function syncManualCoverSessionDebounced() {
+    window.clearTimeout(state.manualCoverSyncTimer);
+    state.manualCoverSyncTimer = window.setTimeout(() => {
+      syncManualCoverSession(collectManualCoverForSession());
+    }, 250);
+  }
+
+  async function syncManualCoverSession(manualCover) {
+    try {
+      await apiPost("/api/cover/session", { manual_cover: manualCover || null });
+    } catch (error) {
+      console.warn("Manual cover session sync failed", error);
+    }
   }
 
   function collectManualCoverArts() {

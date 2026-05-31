@@ -46,9 +46,9 @@
   },
   "hero": {
     "logoAlt": "cyanrip-webui logo",
-    "eyebrow": "Accurate audio CD extraction",
+    "eyebrow": "Quét đĩa",
     "subtitle": "Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.",
-    "github": "GitHub project"
+    "github": "GitHub"
   },
   "toolbar": {
     "discActions": "Disc actions",
@@ -73,17 +73,17 @@
   },
   "status": {
     "title": "Trạng thái",
-    "idle": "Idle",
-    "scanning": "Scanning",
-    "scanned": "Scanned",
-    "scanRequired": "Rescan required",
+    "idle": "Rảnh",
+    "scanning": "Đang quét",
+    "scanned": "Đã quét",
+    "scanRequired": "Cần quét lại",
     "ripping": "Đang rip",
-    "ripped": "Ripped",
-    "failed": "Failed",
-    "stopped": "Stopped",
-    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "ripped": "Đã rip",
+    "failed": "Thất bại",
+    "stopped": "Đã dừng",
+    "tracks": "Bài: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning",
+    "etaScanning": "Đang quét",
     "session": "Session: {id}"
   },
   "session": {
@@ -123,13 +123,13 @@
     "empty": "Chưa quét đĩa nào.",
     "meta": {
       "album": "Album",
-      "artist": "Album artist",
+      "artist": "Nghệ sĩ album",
       "date": "Ngày"
     },
     "summary": {
       "album": "Album",
       "artist": "Nghệ sĩ",
-      "tracks": "Tracks",
+      "tracks": "Bài",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
@@ -176,17 +176,17 @@
     "findDriveOffset": "Find drive offset"
   },
   "mode": {
-    "auto": "Auto",
-    "manual": "Manual",
-    "select": "Select",
-    "path": "Path",
-    "on": "On",
-    "off": "Off",
+    "auto": "Tự động",
+    "manual": "Thủ công",
+    "select": "Chọn",
+    "path": "Đường dẫn",
+    "on": "Bật",
+    "off": "Tắt",
     "max": "Max",
     "numeric": "Numeric",
-    "none": "None",
-    "force": "Force",
-    "disable": "Disable"
+    "none": "Không",
+    "force": "Bắt buộc",
+    "disable": "Tắt"
   },
   "output": {
     "title": "Đầu ra",
@@ -274,7 +274,7 @@
     "home": "Home",
     "project": "Project",
     "cancel": "Hủy",
-    "select": "Use this directory",
+    "select": "Dùng thư mục này",
     "empty": "No subdirectories found."
   },
   "drive": {
@@ -354,20 +354,20 @@
     "coverArtIncomplete": "Cover art line {line} is incomplete.",
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
-    "scanRequired": "Scan the disc first to start ripping.",
+    "scanRequired": "Hãy quét đĩa trước để bắt đầu rip.",
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
-    "scanFailedExitCode": "CD scan failed (exit code {code}).",
+    "scanFailedExitCode": "Quét CD thất bại (mã thoát {code}).",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
-    "generic": "An error occurred.",
-    "binaryPathMissing": "Path to cyanrip binary is missing.",
-    "binaryNotFound": "Binary not found: {path}",
-    "binaryPermission": "Binary is not executable: {path}",
+    "generic": "Đã xảy ra lỗi.",
+    "binaryPathMissing": "Thiếu đường dẫn tới chương trình cyanrip.",
+    "binaryNotFound": "Không tìm thấy chương trình: {path}",
+    "binaryPermission": "Chương trình không thể thực thi: {path}",
     "binaryProbeTimeout": "Binary probe timed out.",
     "binaryProbeFailed": "Binary probe failed: {message}",
     "binaryProbeExitCode": "Binary probe failed with exit code {code}.",
-    "directoryPermission": "No access to directory: {path}",
+    "directoryPermission": "Không có quyền truy cập thư mục: {path}",
     "directoryInvalid": "Invalid directory path: {path}",
     "directoryReadFailed": "Directory could not be read.",
     "coverSourceMissing": "Cover path or URL is missing.",
@@ -375,13 +375,13 @@
     "coverFileNotFound": "Cover file was not found.",
     "coverUnsupportedImage": "File is not a supported image.",
     "coverUploadInvalid": "Uploaded cover is invalid.",
-    "coverUploadFailed": "Cover upload failed.",
+    "coverUploadFailed": "Tải bìa lên thất bại.",
     "coverFileSelectRequired": "Select an image file first.",
     "coverUrlInvalid": "Enter a cover URL starting with http:// or https://.",
     "coverPathRequired": "Enter or select a cover image path.",
     "deviceIdMissing": "device_id is missing.",
     "offsetInvalid": "Offset must be an integer.",
-    "jobRunning": "A scan or rip job is still running. Stop it first.",
+    "jobRunning": "Một tác vụ quét hoặc rip vẫn đang chạy. Hãy dừng nó trước.",
     "ripAlreadyRunning": "A rip job is already running. Stop it or wait first.",
     "scanAlreadyRunning": "A CD scan is already running.",
     "scanStartFailed": "CD scan could not be started.",
@@ -411,7 +411,7 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Ảnh bìa thủ công",
+    "title": "Bìa thủ công",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",

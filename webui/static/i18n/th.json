@@ -46,9 +46,9 @@
   },
   "hero": {
     "logoAlt": "cyanrip-webui logo",
-    "eyebrow": "Accurate audio CD extraction",
+    "eyebrow": "สแกนแผ่น",
     "subtitle": "Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.",
-    "github": "GitHub project"
+    "github": "GitHub"
   },
   "toolbar": {
     "discActions": "Disc actions",
@@ -72,28 +72,28 @@
     }
   },
   "status": {
-    "title": "Status",
-    "idle": "Idle",
-    "scanning": "Scanning",
-    "scanned": "Scanned",
-    "scanRequired": "Rescan required",
-    "ripping": "Ripping",
-    "ripped": "Ripped",
-    "failed": "Failed",
-    "stopped": "Stopped",
-    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "title": "สถานะ",
+    "idle": "ว่าง",
+    "scanning": "กำลังสแกน",
+    "scanned": "สแกนแล้ว",
+    "scanRequired": "ต้องสแกนใหม่",
+    "ripping": "กำลังริป",
+    "ripped": "ริปแล้ว",
+    "failed": "ล้มเหลว",
+    "stopped": "หยุดแล้ว",
+    "tracks": "แทร็ก: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning",
+    "etaScanning": "กำลังสแกน",
     "session": "Session: {id}"
   },
   "session": {
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "สแกนแผ่น",
+    "start": "เริ่มริป",
+    "stop": "หยุดการทำงานปัจจุบัน",
+    "eject": "เปิดไดรฟ์",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,17 +119,17 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
+    "title": "แผ่นดิสก์",
     "empty": "No disc scanned yet.",
     "meta": {
-      "album": "Album",
-      "artist": "Album artist",
-      "date": "Date"
+      "album": "อัลบั้ม",
+      "artist": "ศิลปินอัลบั้ม",
+      "date": "วันที่"
     },
     "summary": {
-      "album": "Album",
-      "artist": "Artist",
-      "tracks": "Tracks",
+      "album": "อัลบั้ม",
+      "artist": "ศิลปิน",
+      "tracks": "แทร็ก",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "ชื่อเรื่อง",
+    "artist": "ศิลปิน",
+    "duration": "ระยะเวลา",
+    "status": "สถานะ",
+    "progress": "ความคืบหน้า",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -176,20 +176,20 @@
     "findDriveOffset": "Find drive offset"
   },
   "mode": {
-    "auto": "Auto",
-    "manual": "Manual",
-    "select": "Select",
-    "path": "Path",
-    "on": "On",
-    "off": "Off",
+    "auto": "อัตโนมัติ",
+    "manual": "กำหนดเอง",
+    "select": "เลือก",
+    "path": "พาธ",
+    "on": "เปิด",
+    "off": "ปิด",
     "max": "Max",
     "numeric": "Numeric",
-    "none": "None",
-    "force": "Force",
-    "disable": "Disable"
+    "none": "ไม่มี",
+    "force": "บังคับ",
+    "disable": "ปิดใช้งาน"
   },
   "output": {
-    "title": "Output",
+    "title": "เอาต์พุต",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -236,13 +236,13 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "การตั้งค่า",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "บันทึก",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
@@ -251,14 +251,14 @@
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "รีเฟรช",
+    "browseDirectory": "เรียกดู",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
   },
   "schemeToken": {
-    "album": "Album",
+    "album": "อัลบั้ม",
     "albumArtist": "Album artist",
     "date": "Year / date",
     "disc": "Disc number",
@@ -273,19 +273,19 @@
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
-    "select": "Use this directory",
+    "cancel": "ยกเลิก",
+    "select": "ใช้ไดเรกทอรีนี้",
     "empty": "No subdirectories found."
   },
   "drive": {
     "noneFound": "No drives detected"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "ตรวจพบ",
+    "queued": "อยู่ในคิว",
+    "running": "กำลังริป",
+    "done": "เสร็จสิ้น",
+    "error": "ข้อผิดพลาด",
     "aborted": "Aborted"
   },
   "hint": {
@@ -345,7 +345,7 @@
     "ejectDone": "Drive opened."
   },
   "error": {
-    "trackLabel": "Track number",
+    "trackLabel": "แทร็ก",
     "integer": "Integer",
     "integerLabel": "{label} is not a valid integer.",
     "float": "Invalid numeric value: {value}",
@@ -354,20 +354,20 @@
     "coverArtIncomplete": "Cover art line {line} is incomplete.",
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
-    "scanRequired": "Scan the disc first to start ripping.",
+    "scanRequired": "สแกนแผ่นก่อนเพื่อเริ่มริป",
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
-    "scanFailedExitCode": "CD scan failed (exit code {code}).",
+    "scanFailedExitCode": "สแกน CD ล้มเหลว (รหัสออก {code})",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
-    "generic": "An error occurred.",
-    "binaryPathMissing": "Path to cyanrip binary is missing.",
-    "binaryNotFound": "Binary not found: {path}",
-    "binaryPermission": "Binary is not executable: {path}",
+    "generic": "เกิดข้อผิดพลาด",
+    "binaryPathMissing": "ไม่มีพาธไปยังไฟล์ cyanrip",
+    "binaryNotFound": "ไม่พบไฟล์โปรแกรม: {path}",
+    "binaryPermission": "ไฟล์โปรแกรมไม่สามารถเรียกใช้ได้: {path}",
     "binaryProbeTimeout": "Binary probe timed out.",
     "binaryProbeFailed": "Binary probe failed: {message}",
     "binaryProbeExitCode": "Binary probe failed with exit code {code}.",
-    "directoryPermission": "No access to directory: {path}",
+    "directoryPermission": "ไม่มีสิทธิ์เข้าถึงไดเรกทอรี: {path}",
     "directoryInvalid": "Invalid directory path: {path}",
     "directoryReadFailed": "Directory could not be read.",
     "coverSourceMissing": "Cover path or URL is missing.",
@@ -375,13 +375,13 @@
     "coverFileNotFound": "Cover file was not found.",
     "coverUnsupportedImage": "File is not a supported image.",
     "coverUploadInvalid": "Uploaded cover is invalid.",
-    "coverUploadFailed": "Cover upload failed.",
+    "coverUploadFailed": "อัปโหลดหน้าปกล้มเหลว",
     "coverFileSelectRequired": "Select an image file first.",
     "coverUrlInvalid": "Enter a cover URL starting with http:// or https://.",
     "coverPathRequired": "Enter or select a cover image path.",
     "deviceIdMissing": "device_id is missing.",
     "offsetInvalid": "Offset must be an integer.",
-    "jobRunning": "A scan or rip job is still running. Stop it first.",
+    "jobRunning": "ยังมีงานสแกนหรือริปกำลังทำงานอยู่ ให้หยุดก่อน",
     "ripAlreadyRunning": "A rip job is already running. Stop it or wait first.",
     "scanAlreadyRunning": "A CD scan is already running.",
     "scanStartFailed": "CD scan could not be started.",
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "หน้าปกแบบกำหนดเอง",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "ใช้ URL",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "ใช้ไฟล์",
+    "upload": "อัปโหลดจากเบราว์เซอร์"
   },
   "filePicker": {
     "title": "Select image file",

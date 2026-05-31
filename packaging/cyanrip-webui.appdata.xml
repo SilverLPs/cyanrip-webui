@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.silverlps.cyanrip-webui</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>cyanrip-webui</name>
+  <developer id="io.github.silverlps">
+    <name>silverlps</name>
+  </developer>
+  <summary>Unofficial local browser workflow for cyanrip</summary>
+  <description>
+    <p>
+      cyanrip-webui starts a local web interface for scanning audio CDs, reviewing metadata, and launching cyanrip rips from the browser.
+    </p>
+  </description>
+  <launchable type="desktop-id">cyanrip-webui.desktop</launchable>
+  <url type="homepage">https://github.com/silverlps/cyanrip-webui</url>
+  <releases>
+    <release version="0.1-alpha" date="2026-05-31" />
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

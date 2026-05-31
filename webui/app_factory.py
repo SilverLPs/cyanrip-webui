@@ -157,6 +157,7 @@ _WS_RPC_ALLOWED: set[tuple[str, str]] = {
     ("GET", "/api/status"),
     ("GET", "/api/logs"),
     ("POST", "/api/cover/upload"),
+    ("POST", "/api/cover/session"),
 }
 
 
@@ -413,7 +414,19 @@ def create_app() -> Flask:
         except OSError as exc:
             return jsonify({"error": f"Cover upload could not be stored: {exc}", "error_key": "error.coverUploadFailed"}), 500
 
-        return jsonify(saved)
+        manual_cover = {"source": saved["path"], "sourceType": "upload"}
+        with state_lock:
+            ui_state["manual_cover"] = manual_cover
+
+        return jsonify({**saved, "manual_cover": manual_cover})
+
+    @app.post("/api/cover/session")
+    def update_manual_cover_session() -> Any:
+        payload = _json_payload()
+        manual_cover = _manual_cover_from_config({"manual_cover": payload.get("manual_cover")})
+        with state_lock:
+            ui_state["manual_cover"] = manual_cover
+        return jsonify({"session": _session_snapshot(ui_state, state_lock)})
 
     @app.post("/api/drives/offset")
     def update_drive_offset() -> Any:

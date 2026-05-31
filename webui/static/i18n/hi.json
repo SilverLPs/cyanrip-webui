@@ -46,9 +46,9 @@
   },
   "hero": {
     "logoAlt": "cyanrip-webui logo",
-    "eyebrow": "Accurate audio CD extraction",
+    "eyebrow": "डिस्क स्कैन करें",
     "subtitle": "Unofficial local browser workflow for cyanrip: scan the disc, review metadata, then start the rip.",
-    "github": "GitHub project"
+    "github": "GitHub"
   },
   "toolbar": {
     "discActions": "Disc actions",
@@ -72,28 +72,28 @@
     }
   },
   "status": {
-    "title": "Status",
-    "idle": "Idle",
-    "scanning": "Scanning",
-    "scanned": "Scanned",
-    "scanRequired": "Rescan required",
-    "ripping": "Ripping",
-    "ripped": "Ripped",
-    "failed": "Failed",
-    "stopped": "Stopped",
-    "tracks": "Tracks: {done}/{total} ({percent}%)",
+    "title": "स्थिति",
+    "idle": "निष्क्रिय",
+    "scanning": "स्कैन हो रहा है",
+    "scanned": "स्कैन हो गया",
+    "scanRequired": "फिर से स्कैन आवश्यक",
+    "ripping": "रिप हो रहा है",
+    "ripped": "रिप पूरा",
+    "failed": "विफल",
+    "stopped": "रोका गया",
+    "tracks": "ट्रैक: {done}/{total} ({percent}%)",
     "eta": "ETA: {eta}",
-    "etaScanning": "Scanning",
+    "etaScanning": "स्कैन हो रहा है",
     "session": "Session: {id}"
   },
   "session": {
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "डिस्क स्कैन करें",
+    "start": "रिप शुरू करें",
+    "stop": "वर्तमान क्रिया रोकें",
+    "eject": "ड्राइव खोलें",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,17 +119,17 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
+    "title": "डिस्क",
     "empty": "No disc scanned yet.",
     "meta": {
-      "album": "Album",
-      "artist": "Album artist",
-      "date": "Date"
+      "album": "एल्बम",
+      "artist": "एल्बम कलाकार",
+      "date": "तारीख"
     },
     "summary": {
-      "album": "Album",
-      "artist": "Artist",
-      "tracks": "Tracks",
+      "album": "एल्बम",
+      "artist": "कलाकार",
+      "tracks": "ट्रैक",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
       "maxConfidence": "max confidence: {value}"
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "शीर्षक",
+    "artist": "कलाकार",
+    "duration": "अवधि",
+    "status": "स्थिति",
+    "progress": "प्रगति",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -176,20 +176,20 @@
     "findDriveOffset": "Find drive offset"
   },
   "mode": {
-    "auto": "Auto",
-    "manual": "Manual",
-    "select": "Select",
-    "path": "Path",
-    "on": "On",
-    "off": "Off",
+    "auto": "स्वचालित",
+    "manual": "मैनुअल",
+    "select": "चुनें",
+    "path": "पथ",
+    "on": "चालू",
+    "off": "बंद",
     "max": "Max",
     "numeric": "Numeric",
-    "none": "None",
-    "force": "Force",
-    "disable": "Disable"
+    "none": "कोई नहीं",
+    "force": "बलपूर्वक",
+    "disable": "अक्षम करें"
   },
   "output": {
-    "title": "Output",
+    "title": "आउटपुट",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -236,13 +236,13 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "सेटिंग्स",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "सहेजें",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
@@ -251,14 +251,14 @@
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "रीफ़्रेश",
+    "browseDirectory": "ब्राउज़",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
   },
   "schemeToken": {
-    "album": "Album",
+    "album": "एल्बम",
     "albumArtist": "Album artist",
     "date": "Year / date",
     "disc": "Disc number",
@@ -273,19 +273,19 @@
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
-    "select": "Use this directory",
+    "cancel": "रद्द करें",
+    "select": "इस निर्देशिका का उपयोग करें",
     "empty": "No subdirectories found."
   },
   "drive": {
     "noneFound": "No drives detected"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "पता चला",
+    "queued": "कतार में",
+    "running": "रिप हो रहा है",
+    "done": "पूरा",
+    "error": "त्रुटि",
     "aborted": "Aborted"
   },
   "hint": {
@@ -345,7 +345,7 @@
     "ejectDone": "Drive opened."
   },
   "error": {
-    "trackLabel": "Track number",
+    "trackLabel": "ट्रैक",
     "integer": "Integer",
     "integerLabel": "{label} is not a valid integer.",
     "float": "Invalid numeric value: {value}",
@@ -354,20 +354,20 @@
     "coverArtIncomplete": "Cover art line {line} is incomplete.",
     "paranoiaRequired": "Numeric paranoia mode requires a non-negative integer value.",
     "paranoiaInvalid": "Paranoia numeric value must be a non-negative integer.",
-    "scanRequired": "Scan the disc first to start ripping.",
+    "scanRequired": "रिप शुरू करने के लिए पहले डिस्क स्कैन करें।",
     "ejectAutoAmbiguous": "Automatic eject is ambiguous with multiple drives. Select a specific drive first.",
     "releaseSelectionRequired": "Multiple releases were found for this Disc ID. Select the correct Release ID and scan again.",
     "noReleaseFound": "No MusicBrainz release was found for this disc. Use the MusicBrainz link or scan without MusicBrainz.",
-    "scanFailedExitCode": "CD scan failed (exit code {code}).",
+    "scanFailedExitCode": "CD स्कैन विफल हुआ (exit code {code})।",
     "websocketRequired": "WebSocket communication is required. Restart with --enable-http-fallback to allow HTTP fallback.",
-    "generic": "An error occurred.",
-    "binaryPathMissing": "Path to cyanrip binary is missing.",
-    "binaryNotFound": "Binary not found: {path}",
-    "binaryPermission": "Binary is not executable: {path}",
+    "generic": "एक त्रुटि हुई।",
+    "binaryPathMissing": "cyanrip binary का पथ गायब है।",
+    "binaryNotFound": "Binary नहीं मिला: {path}",
+    "binaryPermission": "Binary executable नहीं है: {path}",
     "binaryProbeTimeout": "Binary probe timed out.",
     "binaryProbeFailed": "Binary probe failed: {message}",
     "binaryProbeExitCode": "Binary probe failed with exit code {code}.",
-    "directoryPermission": "No access to directory: {path}",
+    "directoryPermission": "डायरेक्टरी तक पहुँच नहीं: {path}",
     "directoryInvalid": "Invalid directory path: {path}",
     "directoryReadFailed": "Directory could not be read.",
     "coverSourceMissing": "Cover path or URL is missing.",
@@ -375,13 +375,13 @@
     "coverFileNotFound": "Cover file was not found.",
     "coverUnsupportedImage": "File is not a supported image.",
     "coverUploadInvalid": "Uploaded cover is invalid.",
-    "coverUploadFailed": "Cover upload failed.",
+    "coverUploadFailed": "कवर अपलोड विफल हुआ।",
     "coverFileSelectRequired": "Select an image file first.",
     "coverUrlInvalid": "Enter a cover URL starting with http:// or https://.",
     "coverPathRequired": "Enter or select a cover image path.",
     "deviceIdMissing": "device_id is missing.",
     "offsetInvalid": "Offset must be an integer.",
-    "jobRunning": "A scan or rip job is still running. Stop it first.",
+    "jobRunning": "स्कैन या रिप कार्य अभी चल रहा है। पहले उसे रोकें।",
     "ripAlreadyRunning": "A rip job is already running. Stop it or wait first.",
     "scanAlreadyRunning": "A CD scan is already running.",
     "scanStartFailed": "CD scan could not be started.",
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "मैनुअल कवर",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "URL उपयोग करें",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "फ़ाइल उपयोग करें",
+    "upload": "ब्राउज़र से अपलोड"
   },
   "filePicker": {
     "title": "Select image file",
