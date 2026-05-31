@@ -176,6 +176,7 @@ def create_app() -> Flask:
         "phase": "idle",
         "scan_signature": None,
         "scan_updated_at": None,
+        "manual_cover": None,
         "binary_probe": {
             "ok": False,
             "binary_path": DEFAULT_UI_SETTINGS["binary_path"],
@@ -460,6 +461,7 @@ def create_app() -> Flask:
             ui_state["phase"] = "idle"
             ui_state["scan_signature"] = None
             ui_state["scan_updated_at"] = None
+            ui_state["manual_cover"] = None
             scan_runtime["process"] = None
             scan_runtime["cancel_requested"] = False
             _reset_scan_runtime_logs(scan_runtime)
@@ -557,6 +559,7 @@ def create_app() -> Flask:
                 previous = ui_state.get("scan_signature")
                 if signature and previous and signature != previous:
                     ui_state["session_id"] = _new_session_id()
+                    ui_state["manual_cover"] = None
 
                 if returncode == 0 and not scan_result.get("error"):
                     ui_state["phase"] = "scanned"
@@ -676,6 +679,7 @@ def create_app() -> Flask:
                 ui_state["phase"] = "scan_required"
                 ui_state["scan_signature"] = current_signature
                 ui_state["scan_updated_at"] = _now_iso()
+                ui_state["manual_cover"] = None
 
             return (
                 jsonify(
@@ -710,6 +714,7 @@ def create_app() -> Flask:
 
         with state_lock:
             ui_state["phase"] = "ripping"
+            ui_state["manual_cover"] = _manual_cover_from_config(config)
 
         return jsonify(_enrich_snapshot(snap, ui_state, state_lock)), 202
 
@@ -992,7 +997,33 @@ def _session_snapshot(ui_state: dict[str, Any], lock: threading.RLock) -> dict[s
             "phase": ui_state.get("phase"),
             "scan_signature": ui_state.get("scan_signature"),
             "scan_updated_at": ui_state.get("scan_updated_at"),
+            "manual_cover": copy.deepcopy(ui_state.get("manual_cover")),
         }
+
+
+def _manual_cover_from_config(config: dict[str, Any]) -> dict[str, str] | None:
+    manual = config.get("manual_cover") if isinstance(config, dict) else None
+    if isinstance(manual, dict):
+        source = str(manual.get("source") or "").strip()
+        source_type = str(manual.get("sourceType") or manual.get("source_type") or "").strip()
+        if source:
+            return {
+                "source": source,
+                "sourceType": source_type if source_type in {"url", "path", "upload"} else "path",
+            }
+
+    cover_arts = config.get("cover_arts") if isinstance(config, dict) else None
+    if isinstance(cover_arts, list):
+        for item in cover_arts:
+            if not isinstance(item, dict):
+                continue
+            source = str(item.get("source") or "").strip()
+            if not source:
+                continue
+            source_type = "url" if source.startswith(("http://", "https://")) else "path"
+            return {"source": source, "sourceType": source_type}
+
+    return None
 
 
 def _binary_probe_snapshot(ui_state: dict[str, Any], lock: threading.RLock) -> dict[str, Any]:

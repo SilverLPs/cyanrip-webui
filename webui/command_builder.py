@@ -35,7 +35,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "decode_hdcd": False,
     "force_deemphasis": False,
     "disable_deemphasis": False,
-    "disable_replaygain": True,
+    "disable_replaygain": False,
     "outputs": ["flac"],
     "bitrate": 256,
     "directory_scheme": "{album}{if #releasecomment# > #0# (|releasecomment|)} [{format}]",

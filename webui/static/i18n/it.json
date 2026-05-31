@@ -72,12 +72,12 @@
     }
   },
   "status": {
-    "title": "Status",
+    "title": "Stato",
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "Estrazione",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "Analizza disco",
+    "start": "Avvia estrazione",
+    "stop": "Ferma azione corrente",
+    "eject": "Apri unità",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "Disco",
+    "empty": "Nessun disco ancora analizzato.",
     "meta": {
       "album": "Album",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "Data"
     },
     "summary": {
       "album": "Album",
-      "artist": "Artist",
+      "artist": "Artista",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "Titolo",
+    "artist": "Artista",
+    "duration": "Durata",
+    "status": "Stato",
+    "progress": "Avanzamento",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "Abilita MusicBrainz",
+    "enableAccurateRip": "Abilita AccurateRip",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "Abilita ReplayGain",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "Disco",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,23 +236,23 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "Impostazioni",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "Salva",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "Errore"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "Aggiorna",
+    "browseDirectory": "Sfoglia",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "Seleziona cartella",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "Annulla",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "Nessuna unità rilevata"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "Rilevato",
+    "queued": "In coda",
+    "running": "Estrazione",
+    "done": "Fatto",
+    "error": "Errore",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "Copertina manuale",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "Usa URL",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "Usa file",
+    "upload": "Carica dal browser"
   },
   "filePicker": {
     "title": "Select image file",

@@ -8,6 +8,7 @@ This project bundles or depends on the following components for source-tree runs
 
 ## Python Dependencies
 
+- Python runtime: Python Software Foundation License Version 2 (PSF-2.0)
 - Flask: BSD-3-Clause
 - flask-sock: MIT
 - simple-websocket: MIT

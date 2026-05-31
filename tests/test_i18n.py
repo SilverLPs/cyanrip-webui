@@ -28,12 +28,17 @@ def _flatten(payload: dict[str, Any], prefix: str = "") -> set[str]:
     return keys
 
 
+def _locale_names() -> list[str]:
+    return sorted(path.stem for path in I18N_DIR.glob("*.json"))
+
+
 class I18nTests(unittest.TestCase):
-    def test_english_and_german_key_sets_match(self) -> None:
+    def test_locale_key_sets_match_english(self) -> None:
         en_keys = _flatten(_load_locale("en"))
-        de_keys = _flatten(_load_locale("de"))
-        self.assertEqual(en_keys - de_keys, set(), "Missing German i18n keys")
-        self.assertEqual(de_keys - en_keys, set(), "Missing English i18n keys")
+        for locale in _locale_names():
+            keys = _flatten(_load_locale(locale))
+            self.assertEqual(en_keys - keys, set(), f"Missing i18n keys in {locale}.json")
+            self.assertEqual(keys - en_keys, set(), f"Unexpected i18n keys in {locale}.json")
 
     def test_referenced_i18n_keys_exist_in_all_locales(self) -> None:
         files = [
@@ -44,12 +49,12 @@ class I18nTests(unittest.TestCase):
         referenced: set[str] = set()
         for path in files:
             text = path.read_text(encoding="utf-8")
-            referenced.update(re.findall(r'data-(?:i18n(?:-[a-z]+)?|tip-key)="([^"]+)"', text))
+            referenced.update(re.findall(r'data-(?:i18n(?:-[a-z-]+)?|tip-key)="([^"]+)"', text))
             referenced.update(re.findall(r'\bt\(\s*"([^"]+)"', text))
             referenced.update(re.findall(r'\blocalizedError\(\s*"([^"]+)"', text))
             referenced.update(re.findall(r'error_key["\']?(?:\])?\s*[:=]\s*["\']([^"\']+)["\']', text))
 
-        for locale in ("en", "de"):
+        for locale in _locale_names():
             keys = _flatten(_load_locale(locale))
             missing = sorted(key for key in referenced if key not in keys)
             self.assertEqual(missing, [], f"Missing referenced i18n keys in {locale}.json")

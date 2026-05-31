@@ -72,12 +72,12 @@
     }
   },
   "status": {
-    "title": "Status",
+    "title": "状态",
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "抓轨中",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "扫描光盘",
+    "start": "开始抓轨",
+    "stop": "停止当前操作",
+    "eject": "打开光驱",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "光盘",
+    "empty": "尚未扫描光盘。",
     "meta": {
-      "album": "Album",
+      "album": "专辑",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "日期"
     },
     "summary": {
-      "album": "Album",
-      "artist": "Artist",
+      "album": "专辑",
+      "artist": "艺人",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "标题",
+    "artist": "艺人",
+    "duration": "时长",
+    "status": "状态",
+    "progress": "进度",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -189,7 +189,7 @@
     "disable": "Disable"
   },
   "output": {
-    "title": "Output",
+    "title": "输出",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "启用 MusicBrainz",
+    "enableAccurateRip": "启用 AccurateRip",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "启用 ReplayGain",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "光盘",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,29 +236,29 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "设置",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "保存",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "错误"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "刷新",
+    "browseDirectory": "浏览",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
   },
   "schemeToken": {
-    "album": "Album",
+    "album": "专辑",
     "albumArtist": "Album artist",
     "date": "Year / date",
     "disc": "Disc number",
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "选择目录",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "取消",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "未检测到光驱"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "已检测",
+    "queued": "排队中",
+    "running": "抓轨中",
+    "done": "完成",
+    "error": "错误",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "手动封面",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "使用 URL",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "使用文件",
+    "upload": "从浏览器上传"
   },
   "filePicker": {
     "title": "Select image file",

@@ -77,7 +77,7 @@
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "Rippen",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "Schijf scannen",
+    "start": "Rip starten",
+    "stop": "Huidige actie stoppen",
+    "eject": "Station openen",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "Schijf",
+    "empty": "Nog geen schijf gescand.",
     "meta": {
       "album": "Album",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "Datum"
     },
     "summary": {
       "album": "Album",
-      "artist": "Artist",
+      "artist": "Artiest",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
+    "title": "Titel",
+    "artist": "Artiest",
+    "duration": "Duur",
     "status": "Status",
-    "progress": "Progress",
+    "progress": "Voortgang",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -189,7 +189,7 @@
     "disable": "Disable"
   },
   "output": {
-    "title": "Output",
+    "title": "Uitvoer",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "MusicBrainz inschakelen",
+    "enableAccurateRip": "AccurateRip inschakelen",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "ReplayGain inschakelen",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "Schijf",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,23 +236,23 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "Instellingen",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "Opslaan",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "Fout"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "Vernieuwen",
+    "browseDirectory": "Bladeren",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "Map kiezen",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "Annuleren",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "Geen stations gevonden"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "Gedetecteerd",
+    "queued": "In wachtrij",
+    "running": "Rippen",
+    "done": "Klaar",
+    "error": "Fout",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "Handmatige hoes",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "URL gebruiken",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "Bestand gebruiken",
+    "upload": "Uploaden vanuit browser"
   },
   "filePicker": {
     "title": "Select image file",

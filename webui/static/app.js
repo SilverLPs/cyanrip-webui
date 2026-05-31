@@ -5,8 +5,52 @@
   const coverSizes = window.CYANRIP_COVERART_SIZES || [];
   const initialSettings = window.CYANRIP_INITIAL_SETTINGS || {};
 
-  const AVAILABLE_LOCALES = ["en", "de"];
+  const AVAILABLE_LOCALES = ["en", "de", "es", "fr", "pt", "ru", "zh", "ja", "ko", "it", "nl", "pl", "tr", "ar", "hi", "id", "vi", "th", "fa", "uk", "cs", "sv", "da", "fi", "no", "el", "he", "ro", "hu", "bg", "sk", "sl", "hr", "sr", "lt", "lv", "et", "ms", "fil", "bn", "ur"];
   const THEME_ORDER = ["auto", "dark", "light"];
+
+  const LOCALE_LABELS = {
+    en: "English / English",
+    de: "Deutsch / German",
+    es: "Español / Spanish",
+    fr: "Français / French",
+    pt: "Português / Portuguese",
+    ru: "Русский / Russian",
+    zh: "中文 / Chinese",
+    ja: "日本語 / Japanese",
+    ko: "한국어 / Korean",
+    it: "Italiano / Italian",
+    nl: "Nederlands / Dutch",
+    pl: "Polski / Polish",
+    tr: "Türkçe / Turkish",
+    ar: "العربية / Arabic",
+    hi: "हिन्दी / Hindi",
+    id: "Bahasa Indonesia / Indonesian",
+    vi: "Tiếng Việt / Vietnamese",
+    th: "ไทย / Thai",
+    fa: "فارسی / Persian",
+    uk: "Українська / Ukrainian",
+    cs: "Čeština / Czech",
+    sv: "Svenska / Swedish",
+    da: "Dansk / Danish",
+    fi: "Suomi / Finnish",
+    no: "Norsk / Norwegian",
+    el: "Ελληνικά / Greek",
+    he: "עברית / Hebrew",
+    ro: "Română / Romanian",
+    hu: "Magyar / Hungarian",
+    bg: "Български / Bulgarian",
+    sk: "Slovenčina / Slovak",
+    sl: "Slovenščina / Slovenian",
+    hr: "Hrvatski / Croatian",
+    sr: "Српски / Serbian",
+    lt: "Lietuvių / Lithuanian",
+    lv: "Latviešu / Latvian",
+    et: "Eesti / Estonian",
+    ms: "Bahasa Melayu / Malay",
+    fil: "Filipino / Filipino",
+    bn: "বাংলা / Bengali",
+    ur: "اردو / Urdu",
+  };
 
   const COOKIE_THEME = "cyanrip_theme_mode";
   const COOKIE_ANIM = "cyanrip_animations";
@@ -1460,6 +1504,32 @@
       scan_signature: session.scan_signature || null,
       scan_updated_at: session.scan_updated_at || null,
     };
+
+    const sessionCover = normalizeManualCover(session.manual_cover);
+    if (sessionCover) {
+      state.manualCover = sessionCover;
+      state.coverPreviewKey = "";
+      renderDiscSummary();
+    }
+  }
+
+  function normalizeManualCover(value) {
+    if (!value || typeof value !== "object") {
+      return null;
+    }
+    const source = String(value.source || "").trim();
+    if (!source) {
+      return null;
+    }
+    const rawSourceType = String(value.sourceType || value.source_type || "").trim();
+    const sourceType = ["url", "path", "upload"].includes(rawSourceType)
+      ? rawSourceType
+      : (source.startsWith("http://") || source.startsWith("https://") ? "url" : "path");
+    return {
+      dirty: true,
+      source,
+      sourceType,
+    };
   }
 
   function applyDiscSnapshot(disc, tracks) {
@@ -2061,6 +2131,16 @@
       return [];
     }
     return [{ destination: "Front", source: state.manualCover.source }];
+  }
+
+  function collectManualCoverForSession() {
+    if (!state.manualCover.dirty || !state.manualCover.source) {
+      return null;
+    }
+    return {
+      source: state.manualCover.source,
+      sourceType: state.manualCover.sourceType || "path",
+    };
   }
 
   function resolveCoverSourceCandidate(raw, disc) {
@@ -2933,6 +3013,7 @@
       disc_number: intOrNull(el("disc-number").value),
       total_discs: intOrNull(el("total-discs").value),
       cover_arts: collectManualCoverArts(),
+      manual_cover: collectManualCoverForSession(),
       disable_mb: !el("enable-mb").checked,
       disable_accurip: !el("enable-accurip").checked,
       disable_coverart_db: !el("enable-coverart-db").checked,
@@ -4025,13 +4106,7 @@
 
   function getLanguageOptionLabel(code) {
     const key = normalizeLocale(code) || String(code || "").toLowerCase();
-    if (key === "de") {
-      return "🇩🇪 Deutsch / German";
-    }
-    if (key === "en") {
-      return "🇬🇧 English / English";
-    }
-    return String(code || "");
+    return LOCALE_LABELS[key] || String(code || "");
   }
 
   function renderSettingsLanguageOptions() {

@@ -19,6 +19,7 @@ try:
         _runtime_default_binary_path,
         _runtime_default_output_dir,
         _resolve_binary_path,
+        _manual_cover_from_config,
         _scan_config_from_user,
     )
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional test env deps
@@ -210,6 +211,40 @@ To continue add metadata via -a or -t, or ignore via -N!
                     ),
                     expected,
                 )
+
+    def test_manual_cover_from_config_prefers_explicit_session_payload(self) -> None:
+        cover = _manual_cover_from_config(
+            {
+                "manual_cover": {
+                    "source": "/tmp/cyanrip-webui/cover-uploads/manual.png",
+                    "sourceType": "upload",
+                },
+                "cover_arts": [{"destination": "Front", "source": "https://example.com/front.jpg"}],
+            }
+        )
+
+        self.assertEqual(
+            cover,
+            {
+                "source": "/tmp/cyanrip-webui/cover-uploads/manual.png",
+                "sourceType": "upload",
+            },
+        )
+
+    def test_manual_cover_from_config_falls_back_to_cover_art_entry(self) -> None:
+        cover = _manual_cover_from_config(
+            {
+                "cover_arts": [{"destination": "Front", "source": "https://example.com/front.jpg"}],
+            }
+        )
+
+        self.assertEqual(
+            cover,
+            {
+                "source": "https://example.com/front.jpg",
+                "sourceType": "url",
+            },
+        )
 
     def test_websocket_rpc_dispatches_allowed_api_route(self) -> None:
         app = create_app()

@@ -321,12 +321,37 @@ h1 {
   border-radius: 999px;
   padding: 0.16rem 0.48rem;
   background: rgba(255, 255, 255, 0.42);
+  color: var(--ink);
 }
 
 .hero-meta a {
   color: var(--accent-strong);
   text-decoration: none;
   font-weight: var(--text-weight-strong);
+}
+
+:root[data-theme="dark"] .hero-meta span,
+:root[data-theme="dark"] .hero-meta a {
+  border-color: rgba(131, 179, 210, 0.58);
+  background: rgba(8, 21, 33, 0.72);
+  color: #d9fbff;
+}
+
+:root[data-theme="dark"] .hero-meta a {
+  color: #8ff5ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero-meta span,
+  :root:not([data-theme="light"]) .hero-meta a {
+    border-color: rgba(131, 179, 210, 0.58);
+    background: rgba(8, 21, 33, 0.72);
+    color: #d9fbff;
+  }
+
+  :root:not([data-theme="light"]) .hero-meta a {
+    color: #8ff5ff;
+  }
 }
 
 .hero-side {
@@ -2125,6 +2150,10 @@ body.advanced-open {
   background: rgba(7, 18, 30, 0.48);
   z-index: 60;
   padding: 1rem;
+}
+
+#directory-picker-overlay {
+  z-index: 80;
 }
 
 .modal-overlay.is-hidden {

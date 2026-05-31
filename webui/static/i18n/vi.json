@@ -72,12 +72,12 @@
     }
   },
   "status": {
-    "title": "Status",
+    "title": "Trạng thái",
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "Đang rip",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "Quét đĩa",
+    "start": "Bắt đầu rip",
+    "stop": "Dừng thao tác hiện tại",
+    "eject": "Mở ổ đĩa",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "Đĩa",
+    "empty": "Chưa quét đĩa nào.",
     "meta": {
       "album": "Album",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "Ngày"
     },
     "summary": {
       "album": "Album",
-      "artist": "Artist",
+      "artist": "Nghệ sĩ",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "Tiêu đề",
+    "artist": "Nghệ sĩ",
+    "duration": "Thời lượng",
+    "status": "Trạng thái",
+    "progress": "Tiến trình",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -189,7 +189,7 @@
     "disable": "Disable"
   },
   "output": {
-    "title": "Output",
+    "title": "Đầu ra",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "Bật MusicBrainz",
+    "enableAccurateRip": "Bật AccurateRip",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "Bật ReplayGain",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "Đĩa",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,23 +236,23 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "Cài đặt",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "Lưu",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "Lỗi"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "Làm mới",
+    "browseDirectory": "Duyệt",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "Chọn thư mục",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "Hủy",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "Không phát hiện ổ đĩa"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "Đã phát hiện",
+    "queued": "Đang chờ",
+    "running": "Đang rip",
+    "done": "Xong",
+    "error": "Lỗi",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "Ảnh bìa thủ công",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "Dùng URL",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "Dùng tệp",
+    "upload": "Tải lên từ trình duyệt"
   },
   "filePicker": {
     "title": "Select image file",

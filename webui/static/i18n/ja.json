@@ -72,12 +72,12 @@
     }
   },
   "status": {
-    "title": "Status",
+    "title": "状態",
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "リッピング中",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "ディスクをスキャン",
+    "start": "リッピング開始",
+    "stop": "現在の操作を停止",
+    "eject": "ドライブを開く",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "ディスク",
+    "empty": "まだディスクをスキャンしていません。",
     "meta": {
-      "album": "Album",
+      "album": "アルバム",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "日付"
     },
     "summary": {
-      "album": "Album",
-      "artist": "Artist",
+      "album": "アルバム",
+      "artist": "アーティスト",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "タイトル",
+    "artist": "アーティスト",
+    "duration": "長さ",
+    "status": "状態",
+    "progress": "進行状況",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -189,7 +189,7 @@
     "disable": "Disable"
   },
   "output": {
-    "title": "Output",
+    "title": "出力",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "MusicBrainz を有効化",
+    "enableAccurateRip": "AccurateRip を有効化",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "ReplayGain を有効化",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "ディスク",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,29 +236,29 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "設定",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "保存",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "エラー"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "更新",
+    "browseDirectory": "参照",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
   },
   "schemeToken": {
-    "album": "Album",
+    "album": "アルバム",
     "albumArtist": "Album artist",
     "date": "Year / date",
     "disc": "Disc number",
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "ディレクトリを選択",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "キャンセル",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "ドライブが検出されません"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "検出済み",
+    "queued": "待機中",
+    "running": "リッピング中",
+    "done": "完了",
+    "error": "エラー",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "手動カバーアート",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "URL を使用",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "ファイルを使用",
+    "upload": "ブラウザーからアップロード"
   },
   "filePicker": {
     "title": "Select image file",

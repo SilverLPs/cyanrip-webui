@@ -78,6 +78,7 @@ def notify_desktop(base_url: str) -> None:
         "--app-name=cyanrip-webui",
         "--icon",
         str(icon),
+        "--expire-time=10000",
         "Application is now running in the background",
         f"Open {base_url} in your browser. Use the system tray icon to open or quit cyanrip-webui.",
     ]

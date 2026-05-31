@@ -72,12 +72,12 @@
     }
   },
   "status": {
-    "title": "Status",
+    "title": "상태",
     "idle": "Idle",
     "scanning": "Scanning",
     "scanned": "Scanned",
     "scanRequired": "Rescan required",
-    "ripping": "Ripping",
+    "ripping": "리핑 중",
     "ripped": "Ripped",
     "failed": "Failed",
     "stopped": "Stopped",
@@ -90,10 +90,10 @@
     "title": "Session"
   },
   "action": {
-    "scan": "Scan disc",
-    "start": "Start rip",
-    "stop": "Stop current action",
-    "eject": "Open drive",
+    "scan": "디스크 스캔",
+    "start": "리핑 시작",
+    "stop": "현재 작업 중지",
+    "eject": "드라이브 열기",
     "backToScan": "Back to scan phase",
     "infoOnlyOn": "Info only: enabled",
     "infoOnlyOff": "Info only: disabled",
@@ -119,16 +119,16 @@
     "showAll": "Show all options"
   },
   "disc": {
-    "title": "Disc",
-    "empty": "No disc scanned yet.",
+    "title": "디스크",
+    "empty": "아직 디스크를 스캔하지 않았습니다.",
     "meta": {
-      "album": "Album",
+      "album": "앨범",
       "artist": "Album artist",
-      "date": "Date"
+      "date": "날짜"
     },
     "summary": {
-      "album": "Album",
-      "artist": "Artist",
+      "album": "앨범",
+      "artist": "아티스트",
       "tracks": "Tracks",
       "totalTime": "Total time",
       "accuraterip": "AccurateRip DB",
@@ -154,11 +154,11 @@
   },
   "table": {
     "track": "#",
-    "title": "Title",
-    "artist": "Artist",
-    "duration": "Duration",
-    "status": "Status",
-    "progress": "Progress",
+    "title": "제목",
+    "artist": "아티스트",
+    "duration": "길이",
+    "status": "상태",
+    "progress": "진행률",
     "accuraterip": "AccurateRip"
   },
   "ripping": {
@@ -189,7 +189,7 @@
     "disable": "Disable"
   },
   "output": {
-    "title": "Output",
+    "title": "출력",
     "note": "Select formats and naming.",
     "baseDirectory": "Output base directory",
     "useWorkdir": "Use settings directory",
@@ -209,15 +209,15 @@
   },
   "metadata": {
     "title": "Rip options and metadata",
-    "enableMb": "Enable MusicBrainz",
-    "enableAccurateRip": "Enable AccurateRip",
+    "enableMb": "MusicBrainz 활성화",
+    "enableAccurateRip": "AccurateRip 활성화",
     "enableCoverArtDb": "Enable Cover Art DB",
     "enableEmbedding": "Enable embedding",
-    "enableReplayGain": "Enable ReplayGain",
+    "enableReplayGain": "ReplayGain 활성화",
     "eject": "Eject after success",
     "infoOnly": "Info only",
     "release": "Release",
-    "disc": "Disc",
+    "disc": "디스크",
     "totalDiscs": "Total discs",
     "coverArt": "Cover art",
     "coverArtSize": "Cover art max size"
@@ -236,29 +236,29 @@
     "logEmpty": "Log is empty."
   },
   "settings": {
-    "title": "Settings",
+    "title": "설정",
     "close": "Close settings",
     "language": "Language",
     "binaryPath": "Binary path",
     "workingDirectory": "Working directory",
     "checkBinary": "Check binary",
-    "save": "Save",
+    "save": "저장",
     "binaryUnknown": "Binary status unknown.",
     "binaryOk": "Binary available",
     "binaryMissing": "Binary unavailable",
     "binaryVersion": "Version",
-    "binaryError": "Error"
+    "binaryError": "오류"
   },
   "button": {
     "refreshDrives": "Refresh drives",
-    "refresh": "Refresh",
-    "browseDirectory": "Browse",
+    "refresh": "새로 고침",
+    "browseDirectory": "찾아보기",
     "addLiteral": "Add text",
     "clearScheme": "Clear",
     "remove": "Remove"
   },
   "schemeToken": {
-    "album": "Album",
+    "album": "앨범",
     "albumArtist": "Album artist",
     "date": "Year / date",
     "disc": "Disc number",
@@ -268,24 +268,24 @@
     "format": "Audio format"
   },
   "directoryPicker": {
-    "title": "Select directory",
+    "title": "디렉터리 선택",
     "close": "Close directory picker",
     "up": "Up",
     "home": "Home",
     "project": "Project",
-    "cancel": "Cancel",
+    "cancel": "취소",
     "select": "Use this directory",
     "empty": "No subdirectories found."
   },
   "drive": {
-    "noneFound": "No drives detected"
+    "noneFound": "드라이브를 찾지 못했습니다"
   },
   "trackStatus": {
-    "detected": "Detected",
-    "queued": "Queued",
-    "running": "Ripping",
-    "done": "Done",
-    "error": "Error",
+    "detected": "감지됨",
+    "queued": "대기 중",
+    "running": "리핑 중",
+    "done": "완료",
+    "error": "오류",
     "aborted": "Aborted"
   },
   "hint": {
@@ -411,17 +411,17 @@
     "coverDownloadFailed": "Cover download failed."
   },
   "cover": {
-    "title": "Manual cover art",
+    "title": "수동 커버 아트",
     "close": "Close cover dialog",
     "clickToEdit": "Edit cover art",
     "previewAlt": "Album cover preview",
     "manualActive": "Manual cover art is active",
     "resetManual": "Reset manual cover",
     "url": "Cover URL",
-    "useUrl": "Use URL",
+    "useUrl": "URL 사용",
     "localFile": "Local image file",
-    "useFile": "Use file",
-    "upload": "Upload from browser"
+    "useFile": "파일 사용",
+    "upload": "브라우저에서 업로드"
   },
   "filePicker": {
     "title": "Select image file",
